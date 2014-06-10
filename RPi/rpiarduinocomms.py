@@ -7,7 +7,7 @@ address = 0x04
 
 # for RPI version 1, use "bus = smbus.SMBus( 0 )"
 # for RPI version 2, use "bus = smbus.SMBus( 1 )"
-#bus = smbus.SMBus( busnum )
+bus = smbus.SMBus( busnum )
 
 # Write one character to the I2C bus
 def writeCharacter( c ):
@@ -48,7 +48,6 @@ def readStatus():
 # Wait for the status response to be non-zero
 def sendArduino( command ):
     print( command )
-    return 1
     writeCommand( command )
     i = 0
     status = readStatus()
