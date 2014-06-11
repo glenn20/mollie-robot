@@ -7,21 +7,31 @@ import numpy as np
 import picamera
 
 # from getch import getch
-from robot import Robot
+import rpiarduinocomms
+import robot
 from colourtracking import SetupColourTracking, ColourTracking, SetupHSVTuning
 
 TUNE_THRESHOLDS = False
 PROCESS_ROBOT   = False
 
-width          = 320
-height         = 240
+width           = 320
+height          = 240
+
+# Create a Robot instance talking on the arduino Bus
+# I2Cbusnumber = 0 if RPI version 1 else 1 if RPI version 2
+# I2Caddress of the arduino board - as set in arduinoRobot program
+arduinocomms = rpiarduinocomms.ArduinoComms( 
+    I2Cbusnumber = 1,    
+    I2Caddress   = 0x04,
+    dummy        = True
+    )
+robot = robot.ArduinoRobot( arduinocomms )
 
 hsv_all = [
     np.array( [   0,   0,   0 ], np.uint8 ),
     np.array( [ 179, 255, 255 ], np.uint8 )
 ]
 
-#For Raspberry Pi camera: tennis ball
 hsv_tennisball = [
     np.array( [  32,  85,  26 ], np.uint8 ),
     np.array( [  50, 255, 255 ], np.uint8 )
@@ -46,7 +56,6 @@ processedcount = 0
 start          = time.time()
 finish         = time.time()
 
-robot = Robot()
 
 def doColourTracking( stream ):
     global robot
@@ -61,7 +70,7 @@ def doColourTracking( stream ):
     while ok and c >= 0 and i < 5:
         i += 1
         c = cv2.waitKey( 50 )
-        ok = robot.RemoteControl( c )
+        ok = robot.RemoteControl( c ) is not None
     return ok
 
 # We will build a pool of Imageprocessors
@@ -165,6 +174,12 @@ def main():
     except KeyboardInterrupt:
         print( "Interrupted - shutting down..." )
     
+    try:
+        cv2.destroyAllWindows()
+        poolcleanup()
+    except KeyboardInterrupt:
+        print( "Exiting..." )
+
     # Print a summary of what we have done
     print( 'Captured %d images in %d seconds at %.2ffps'
            % (capturecount, finish-start, capturecount/(finish-start) ) )
@@ -176,13 +191,6 @@ def main():
                % (HSV_slice[0][0], HSV_slice[0][1], HSV_slice[0][2]) )
         print( "HSV_max = %03d %03d %03d"
                % (HSV_slice[1][0], HSV_slice[1][1], HSV_slice[1][2]) )
-
-    try:
-        cv2.destroyAllWindows()
-        poolcleanup()
-    except KeyboardInterrupt:
-        print( "Exiting..." )
-
 
 if __name__ == "__main__":
     main()
