@@ -16,8 +16,8 @@ class ColourTracker():
         self.use_contours = use_contours
         self.show_images = show_images
         self.tune_hsv_thresholds = tune_hsv_thresholds
+        cv2.namedWindow( "output", 1 )
         if self.show_images:
-            cv2.namedWindow( "output", 1 )
             cv2.namedWindow( "processed", 1 )
         if self.tune_hsv_thresholds:
             self.SetupHSVTuning()
@@ -41,6 +41,7 @@ class ColourTracker():
             cv2.drawContours( img, contours, -1, (0,0,255), 2 ) 
         maxarea = 0
         bestcontour = None
+        moments = None
         for contour in contours:
             area = cv2.contourArea( contour )
             if (area > maxarea):
