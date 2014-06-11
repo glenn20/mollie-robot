@@ -9,7 +9,7 @@ import picamera
 # from getch import getch
 import arduinocomms
 import arduinorobot
-import colourtracking
+import colourtracker
 
 PROCESS_ROBOT   = False
 
@@ -41,7 +41,7 @@ hsv_redball = [
     np.array( [   9, 255, 255 ], np.uint8 )
 ]
 
-colourtracker = colourtracking.ColourTracker(
+objecttracker = colourtracker.ColourTracker(
     hsv_slice           = hsv_redball,
     use_contours        = True,
     show_images         = True,
@@ -62,11 +62,11 @@ finish         = time.time()
 
 
 def doColourTracking( stream ):
-    global robot, tracker
+    global robot, objecttracker
 
     ok = True
     # Get the postion of the object being tracked
-    posX, posY, area = colourtracker.Track( stream )
+    posX, posY, area = objecttracker.Track( stream )
     robot.TrackObject( posX, posY, area )
     # Process any key presses until none left
     c = 0
@@ -167,7 +167,7 @@ def rpitracking():
         camera.capture_sequence( streams(), use_video_port=True )
 
 def main():
-    global start, finish, capturecount, processedcount
+    global start, finish, capturecount, processedcount, objecttracker
 
     try:
         rpitracking()
@@ -186,15 +186,15 @@ def main():
     print( 'Processed %d images in %d seconds at %.2ffps'
            % (processedcount, finish-start, processedcount/(finish-start) ) )
         
-    if colourtracker.tune_hsv_thresholds:
+    if objecttracker.tune_hsv_thresholds:
         print( "HSV_min = %03d %03d %03d"
-               % (colourtracker.HSV_slice[0][0],
-                  colourtracker.HSV_slice[0][1],
-                  colourtracker.HSV_slice[0][2]) )
+               % (objecttracker.HSV_slice[0][0],
+                  objecttracker.HSV_slice[0][1],
+                  objecttracker.HSV_slice[0][2]) )
         print( "HSV_max = %03d %03d %03d"
-               % (colourtracker.HSV_slice[1][0],
-                  colourtracker.HSV_slice[1][1],
-                  colourtracker.HSV_slice[1][2]) )
+               % (objecttracker.HSV_slice[1][0],
+                  objecttracker.HSV_slice[1][1],
+                  objecttracker.HSV_slice[1][2]) )
 
 if __name__ == "__main__":
     main()
