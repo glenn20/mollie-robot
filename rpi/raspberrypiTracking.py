@@ -7,8 +7,8 @@ import numpy as np
 import picamera
 
 # from getch import getch
-import rpiarduinocomms
-import robot
+import arduinocomms
+import arduinorobot
 from colourtracking import SetupColourTracking, ColourTracking, SetupHSVTuning
 
 TUNE_THRESHOLDS = False
@@ -20,12 +20,12 @@ height          = 240
 # Create a Robot instance talking on the arduino Bus
 # I2Cbusnumber = 0 if RPI version 1 else 1 if RPI version 2
 # I2Caddress of the arduino board - as set in arduinoRobot program
-arduinocomms = rpiarduinocomms.ArduinoComms( 
+arduinocomms = arduinocomms.ArduinoComms( 
     I2Cbusnumber = 1,    
     I2Caddress   = 0x04,
     dummy        = True
     )
-robot = robot.ArduinoRobot( arduinocomms )
+robot = arduinorobot.ArduinoRobot( arduinocomms )
 
 hsv_all = [
     np.array( [   0,   0,   0 ], np.uint8 ),
