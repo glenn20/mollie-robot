@@ -9,9 +9,8 @@ import picamera
 # from getch import getch
 import arduinocomms
 import arduinorobot
-from colourtracking import SetupColourTracking, ColourTracking, SetupHSVTuning
+import colourtracking
 
-TUNE_THRESHOLDS = False
 PROCESS_ROBOT   = False
 
 width           = 320
@@ -42,7 +41,12 @@ hsv_redball = [
     np.array( [   9, 255, 255 ], np.uint8 )
 ]
 
-hsv_slice = hsv_redball
+colourtracker = colourtracking.ColourTracker(
+    hsv_slice           = hsv_redball,
+    use_contours        = True,
+    show_images         = True,
+    tune_hsv_thresholds = False
+    )
 
 # Initialise globals
 
@@ -58,11 +62,11 @@ finish         = time.time()
 
 
 def doColourTracking( stream ):
-    global robot
+    global robot, tracker
 
     ok = True
     # Get the postion of the object being tracked
-    posX, posY, area = ColourTracking( stream )
+    posX, posY, area = colourtracker.Track( stream )
     robot.TrackObject( posX, posY, area )
     # Process any key presses until none left
     c = 0
@@ -146,10 +150,6 @@ def poolcleanup():
 def rpitracking():
     global width, height, pool, hsv_slice, start
 
-    SetupColourTracking( hsv_slice, show_images = True )
-    if TUNE_THRESHOLDS:
-        SetupHSVTuning( hsv_slice )
-    
     with picamera.PiCamera() as camera:
         pool = [ImageProcessor() for i in range(4)]
         camera.preview_fullscreen = False
@@ -186,11 +186,15 @@ def main():
     print( 'Processed %d images in %d seconds at %.2ffps'
            % (processedcount, finish-start, processedcount/(finish-start) ) )
         
-    if TUNE_THRESHOLDS:
+    if colourtracker.tune_hsv_thresholds:
         print( "HSV_min = %03d %03d %03d"
-               % (HSV_slice[0][0], HSV_slice[0][1], HSV_slice[0][2]) )
+               % (colourtracker.HSV_slice[0][0],
+                  colourtracker.HSV_slice[0][1],
+                  colourtracker.HSV_slice[0][2]) )
         print( "HSV_max = %03d %03d %03d"
-               % (HSV_slice[1][0], HSV_slice[1][1], HSV_slice[1][2]) )
+               % (colourtracker.HSV_slice[1][0],
+                  colourtracker.HSV_slice[1][1],
+                  colourtracker.HSV_slice[1][2]) )
 
 if __name__ == "__main__":
     main()
