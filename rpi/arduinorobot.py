@@ -9,7 +9,7 @@ class ArduinoRobot():
         self.arduino    = arduinoComms
 
     # Simple method to do range checking
-    def constrain( self, n, minn, maxn ):
+    def _constrain( self, n, minn, maxn ):
         if n < minn:
             return minn
         elif n > maxn:
@@ -22,16 +22,16 @@ class ArduinoRobot():
 
     # Tell the robot to move at "speed" in "direction"
     def Go( self, speed, direction=0 ):
-        self.speed     = self.constrain( speed, -255, 255 )
-        self.direction = self.constrain( direction, -0.1, 0.1 )
+        self.speed     = self._constrain( speed, -255, 255 )
+        self.direction = self._constrain( direction, -0.1, 0.1 )
         return self.send( "run %d %d"
                           % (int(round(self.speed)),
                              int(round(self.direction * 1000))) )
 
     # Tell the robot to point camera at "angle"
-    def Servo( self, angle ):
-        self.angle = self.constrain( angle, -90, 90 )
-        return self.send( "servo %d"
+    def Look( self, angle ):
+        self.angle = self._constrain( angle, -90, 90 )
+        return self.send( "look %d"
                           % (angle) ) 
 
     # Tell the robot to track to the given angles
@@ -59,7 +59,7 @@ class ArduinoRobot():
         if c == "q":
             # Quit the program
             self.Go( 0, 0 )
-            # self.Servo( 0 )
+            # self.Look( 0 )
             return None
         elif c == "t":
             # Toggle tracking mode on/off
@@ -70,10 +70,10 @@ class ArduinoRobot():
             return self.Go( 0, 0 )
         elif c == "z":
             # Turn camera/head to left
-            return self.Servo( self.angle - 2 )
+            return self.Look( self.angle - 2 )
         elif c == "x":
             # Turn camera/head to right
-            return self.Servo( self.angle + 2 )	
+            return self.Look( self.angle + 2 )	
         elif c == "R":
             # Up key - Increase robot speed
             return self.Go( self.speed + 10, self.direction )

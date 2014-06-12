@@ -1,5 +1,5 @@
-import cv2
 import numpy as np
+import cv2
 
 class ColourTracker():
     def __init__( self,

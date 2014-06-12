@@ -76,7 +76,7 @@ char* ReadCommandLine()
 // Returns true if any action was taken, else return false.
 boolean RobotCommand( char* line )
 {
-  char command[20] = "";// A string to hold the motor command
+  char command[20] = "";// A string to hold the robot command
   int numbers[8];          // The list of numbers following the command
 
   // Every command starts with the <command>, then up to eight integer numbers
@@ -97,7 +97,7 @@ boolean RobotCommand( char* line )
     // 1 means Forward, 0 means Backward
     //   setdirection 0
     robbie.Go( robbie.speed(), numbers[0] );
-  } else if (cmd == "servo" && n == 1) {
+  } else if (cmd == "look" && n == 1) {
     // set servo angle
     int angle = numbers[0];
     if (-90 <= angle && angle <= 90) {
@@ -117,7 +117,7 @@ boolean RobotCommand( char* line )
 
 boolean TrackCommand( char* line )
 {
-  char command[20] = "";   // A string to hold the servo command
+  char command[20] = "";   // A string to hold the command
   int numbers[8];          // The list of numbers following the command
 
   int n = sscanf( line, "%20s %d %d %d %d %d %d %d %d", 

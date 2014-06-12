@@ -1,6 +1,4 @@
-import io
 import cv2
-import numpy as np
 import picamera
 
 # from getch import getch
