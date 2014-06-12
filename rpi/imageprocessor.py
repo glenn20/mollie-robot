@@ -33,9 +33,9 @@ class ImageProcessor( threading.Thread ):
 # We will build a pool of Imageprocessors
 class ProcessorManager():
     def __init__( self,
-                  numberofthreads = 4,
-                  imageprocessingfunction = None ):
-        self.ImageProcessingFunction = imageprocessingfunction
+                  numberofthreads    = 4,
+                  processingfunction = None ):
+        self.ProcessingFunc = processingfunction
         self.done           = False
         self.lock           = threading.Lock()
         self.capturecount   = 0
@@ -56,14 +56,13 @@ class ProcessorManager():
             self.pool.append( processor )
 
     def doImageProcessing( self, stream ):
-        if self.ImageProcessingFunction is not None:
-            if not self.ImageProcessingFunction( stream ):
+        if self.ProcessingFunc is not None:
+            if not self.ProcessingFunc( stream ):
                 self.done = True
         # Print out some progress reports
         self.processedcount += 1
         if (self.processedcount % 10 == 0):
             print( "Processed %4d" % (self.processedcount) )
-        self.finish = time.time()
 
     # A generator function to yield the streams from the pool of ImageProcessors
     # for successive image capture by camera.capture_sequence() (see below) 
@@ -102,6 +101,7 @@ class ProcessorManager():
                   self.processedcount/(self.finish-self.start) ) )
 
     def close( self ):
+        self.finish = time.time()
         while self.pool:
             with self.lock:
                 processor = self.pool.pop()
@@ -109,7 +109,10 @@ class ProcessorManager():
                 processor.join()
         self.report()
 
-    def __exit__( self ):
+    def __enter__( self ):
+        return self
+
+    def __exit__( self, exc_type, exc_val, exc_tb ):
         self.close()
 
 # Local Variables:

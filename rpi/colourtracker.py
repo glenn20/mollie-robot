@@ -23,7 +23,7 @@ class ColourTracker():
             self.SetupHSVTuning()
 
     # return a monochrome image with only pixels between the HSV range
-    def ColorThreshold( self, img ):
+    def _ColorThreshold( self, img ):
         return cv2.dilate(
             cv2.erode(
                 cv2.inRange(
@@ -33,7 +33,7 @@ class ColourTracker():
             None, iterations=8 )
 
     # Calculate moments from the largest contour of the thresholded image
-    def getContourMoments( self, imgFiltered, img ):
+    def _getContourMoments( self, imgFiltered, img ):
         contours, heirarchy = cv2.findContours( imgFiltered,
                                                 cv2.RETR_EXTERNAL,
                                                 cv2.CHAIN_APPROX_SIMPLE )
@@ -65,7 +65,7 @@ class ColourTracker():
         # img = cv2.smooth( img, cv2.BLUR, 3 )
 
         # Generate the thresholded image to identify 
-        imgFiltered = self.ColorThreshold( img )
+        imgFiltered = self._ColorThreshold( img )
 
         if self.show_images:
             cv2.imshow( "processed", imgFiltered )
@@ -76,7 +76,7 @@ class ColourTracker():
             moments = cv2.moments( imgFiltered, 0 )
         else:
             # Calculate moments from the largest contour
-            moments = self.getContourMoments( imgFiltered, img )
+            moments = self._getContourMoments( imgFiltered, img )
 
         area = 0
         if moments is not None:
@@ -142,3 +142,17 @@ class ColourTracker():
         cv2.setTrackbarPos( "V_MIN", windowname, self.HSV_slice[0][2] )
         cv2.setTrackbarPos( "V_MAX", windowname, self.HSV_slice[1][2] )
 
+    def close():
+        # If we were adjusting HSV slice values, print them out
+        if self.tune_hsv_thresholds:
+            print( "HSV_min = %03d %03d %03d"
+                   % (self.HSV_slice[0][0],
+                      self.HSV_slice[0][1],
+                      self.HSV_slice[0][2]) )
+            print( "HSV_max = %03d %03d %03d"
+                   % (self.HSV_slice[1][0],
+                      self.HSV_slice[1][1],
+                      self.HSV_slice[1][2]) )
+
+        # Wind up and shutdown
+        cv2.destroyAllWindows()

@@ -87,3 +87,6 @@ class ArduinoRobot():
             # Left key - Turn robot to the left
             return self.Go( self.speed, self.direction - 0.02 )
         return True
+
+    def close():
+        pass
