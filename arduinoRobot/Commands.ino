@@ -4,7 +4,10 @@
 #include <Servo.h>
 #include <PID_v1.h>
 
-#include "RobotMotors.h"
+#include "Encoder.h"
+#include "Motor.h"
+#include "Head.h"
+#include "Robot.h"
 
 #define SLAVE_ADDRESS 0x04
 
@@ -14,22 +17,44 @@
 void leftEncoderISR();
 void rightEncoderISR();
 
-// Left  Encoder: Arduino Pin for the encoder signal, and interrupt number
-EncoderParams leftencoder ( 3, 1, leftEncoderISR );
-// Right Encoder: Arduino Pin for the encoder signal, and interrupt number
-EncoderParams rightencoder( 2, 0, rightEncoderISR);
-// Left motor: controlpin1, controlpin2, enablePin, leftencoder
-MotorParams   leftwheel   ( 7, 4,  6, leftencoder );
-// Left motor: controlpin1, controlpin2, enablePin, leftencoder
-MotorParams   rightwheel  ( 5, 8, 11, rightencoder );
-// Head: Arduino pin for the Servo control pin
-HeadParams    head( 10 );
-// Robot: Is built from two wheels and a head
-RobotParams   robotparams( leftwheel, rightwheel, head );
+// Start assembling Robbie the robot from the ground up...
+Encoder leftencoder (    // Left wheel encoder
+  3,                       // Arduino input pin for the encoder signal
+  1,                       // Arduino interrupt number to generate
+  leftEncoderISR           // Interrupt service routine for this encoder
+  );
 
-// Construct an instance of our Robot initialised with the Parameters above
-Robot robbie( robotparams );
+Encoder rightencoder(    // Right wheel encoder
+  2,                       // Arduino input pin for the encoder signal
+  0,                       // Arduino interrupt number to generate
+  rightEncoderISR          // Interrupt service routine for this encoder
+  );
 
+Motor   leftwheel   (    // Left wheel DC motor and encoder
+  7,                       // Arduino pin for the first  H-Bridge control pin
+  4,                       // Arduino pin for the second H-Bridge control pin
+  6,                       // Arduino PWN pin for the H-Bridge Enable pin
+  leftencoder              // The Encoder object for this wheel
+  );
+
+Motor   rightwheel  (    // Right wheel DC motor and encoder
+  5,                       // Arduino pin for the first  H-Bridge control pin
+  8,                       // Arduino pin for the second H-Bridge control pin
+  11,                      // Arduino PWM pin for the H-Bridge Enable pin
+  rightencoder             // The Encoder object for this wheel
+  );
+
+Head    head(            // The Robot head servo motor controller
+  10                       // Arduino PWM pin for the servo controller
+  );
+
+Robot robbie(            // Robbie is built from two wheels and a head
+  leftwheel,               // The left  wheel controller
+  rightwheel,              // The right wheel controller
+  head                     // The head servo controller
+  );
+
+// Load the interrupt service routines for the left and right wheel encoders
 void leftEncoderISR()  {robbie.leftwheel.encoder.update();}
 void rightEncoderISR() {robbie.rightwheel.encoder.update();}
 
@@ -46,38 +71,38 @@ double Setpointbody, Inputbody, Outputbody;
 PID myPIDX(&InputX, &OutputX, &SetpointX, 0.1, 0.0, 0.0, DIRECT);
 PID myPIDbody(&Inputbody, &Outputbody, &Setpointbody, 5.0, 0.0, 0.0, DIRECT);
 
-char  commandline[128];
-char* nextchar = commandline;
-
-// Read whatever characters are ready from the RaspberryPi. 
-// If we have a whole line of text, return the line of text
-// Else if we don't have a whole line,
-//    ...save what we have read so far and return NULL
-char* ReadCommandLine()
+void SetupCommands()
 {
-  char c;
-  // While there are more characters to be read from the serial port
-  while (Wire.available()) {
-    c = Wire.read();            // Read the next character
-    if (c != '\n') {            // If this is not the end of the line...
-      *nextchar++ = c;        // Add the next character to the string
-      *nextchar = '\0';       // Terminate the string
-    } else {                    // If this is the end of the line...
-      *nextchar = '\0';       // Terminate the string
-      nextchar = commandline; // Reset nextchar back to the start
-      return commandline;     // Return the commandline
-    }
-  }
-  return NULL;
+  Wire.begin(SLAVE_ADDRESS);    // Setup as a slave on the i2c bus
+  Wire.onReceive(receiveData);  // Receive commands from RPI
+  Wire.onRequest(sendData);     // Send data when asked
+
+  // Initialise the Robot motors
+  robbie.initialise();
+  robbie.enable();
+  delay(1);
+
+  // --- Setup PID ---
+  SetpointX = 0;
+  Setpointbody = 0;
+  myPIDX.SetOutputLimits(-90, 90);
+  myPIDbody.SetOutputLimits(-100, 100);
+  //turn PIDs on
+  myPIDX.SetMode(AUTOMATIC);
+  myPIDbody.SetMode(AUTOMATIC);
 }
 
+void LoopCommands()
+{
+  robbie.Loop();
+}
 
 // Process a line of text containing commands to move the motors
 // Returns true if any action was taken, else return false.
 boolean RobotCommand( char* line )
 {
-  char command[20] = "";// A string to hold the robot command
-  int numbers[8];          // The list of numbers following the command
+  char command[20] = "";// A string to hold the command
+  int  numbers[8];      // The list of numbers following the command
 
   // Every command starts with the <command>, then up to eight integer numbers
   int n = sscanf( line, "%20s %d %d %d %d %d %d %d %d", 
@@ -156,30 +181,29 @@ boolean TrackCommand( char* line )
   return true;
 }
 
-void SetupCommands()
+static char  commandline[128];
+static char* nextchar = commandline;
+
+// Read whatever characters are ready from the RaspberryPi. 
+// If we have a whole line of text, return the line of text
+// Else if we don't have a whole line,
+//    ...save what we have read so far and return NULL
+char* ReadCommandLine()
 {
-  Wire.begin(SLAVE_ADDRESS);    // Setup as a slave on the i2c bus
-  Wire.onReceive(receiveData);  // Receive commands from RPI
-  Wire.onRequest(sendData);     // Send data when asked
-
-  // Initialise the Robot motors
-  robbie.initialise();
-  robbie.enable();
-  delay(1);
-
-  // --- Setup PID ---
-  SetpointX = 0;
-  Setpointbody = 0;
-  myPIDX.SetOutputLimits(-90, 90);
-  myPIDbody.SetOutputLimits(-100, 100);
-  //turn PIDs on
-  myPIDX.SetMode(AUTOMATIC);
-  myPIDbody.SetMode(AUTOMATIC);
-}
-
-void LoopCommands()
-{
-  robbie.Loop();
+  char c;
+  // While there are more characters to be read from the serial port
+  while (Wire.available()) {
+    c = Wire.read();            // Read the next character
+    if (c != '\n') {            // If this is not the end of the line...
+      *nextchar++ = c;        // Add the next character to the string
+      *nextchar = '\0';       // Terminate the string
+    } else {                    // If this is the end of the line...
+      *nextchar = '\0';       // Terminate the string
+      nextchar = commandline; // Reset nextchar back to the start
+      return commandline;     // Return the commandline
+    }
+  }
+  return NULL;
 }
 
 // status =  0 if command in progress
@@ -191,7 +215,7 @@ static int cmdstatus = 1;
 void receiveData(int byteCount)
 {
   cmdstatus = 0;
-  // Try to read an entire commend line
+  // Try to read an entire command line
   char *s = ReadCommandLine();
   if (s == NULL) {
     cmdstatus = 0;	// Didn't get the whole cmd yet: waiting for the rest
