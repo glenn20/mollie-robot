@@ -10,18 +10,15 @@ class ArduinoRobot():
 
     # Simple method to do range checking
     def _constrain( self, n, minn, maxn ):
-        if n < minn:
-            return minn
-        elif n > maxn:
-            return maxn
-        else:
-            return n
+        return (n if minn <= n <= maxn
+                else (minn if n < minn
+                      else maxn))
 
     def send( self, command ):
         return self.arduino.send( command )
 
     # Tell the robot to move at "speed" in "direction"
-    def Go( self, speed, direction=0 ):
+    def Run( self, speed, direction=0 ):
         self.speed     = self._constrain( speed, -255, 255 )
         self.direction = self._constrain( direction, -0.1, 0.1 )
         return self.send( "run %d %d"
@@ -48,7 +45,7 @@ class ArduinoRobot():
         elif self.trackingOn == True:
             # If we lost the object - tell the robot to go straight
             if self.direction != 0 and self.speed != 0:
-                return self.Go( self.speed, 0 )
+                return self.Run( self.speed, 0 )
     
     # Process any key presses - return False if time to quit
     def RemoteControl( self, c ):
@@ -58,7 +55,7 @@ class ArduinoRobot():
         print( ">>  %s" % (c) )
         if c == "q":
             # Quit the program
-            self.Go( 0, 0 )
+            self.Run( 0, 0 )
             # self.Look( 0 )
             return None
         elif c == "t":
@@ -67,7 +64,7 @@ class ArduinoRobot():
             return True
         elif c == " ":
             # Stop robot command
-            return self.Go( 0, 0 )
+            return self.Run( 0, 0 )
         elif c == "z":
             # Turn camera/head to left
             return self.Look( self.angle - 2 )
@@ -76,16 +73,16 @@ class ArduinoRobot():
             return self.Look( self.angle + 2 )	
         elif c == "R":
             # Up key - Increase robot speed
-            return self.Go( self.speed + 10, self.direction )
+            return self.Run( self.speed + 10, self.direction )
         elif c == "T":
             # Down key - Decrease robot speed
-            return self.Go( self.speed - 10, self.direction )
+            return self.Run( self.speed - 10, self.direction )
         elif c == "S":
             # Right key - Turn robot to the right
-            return self.Go( self.speed, self.direction + 0.02 )
+            return self.Run( self.speed, self.direction + 0.02 )
         elif c == "Q":
             # Left key - Turn robot to the left
-            return self.Go( self.speed, self.direction - 0.02 )
+            return self.Run( self.speed, self.direction - 0.02 )
         return True
 
     def close():

@@ -17,12 +17,21 @@ class TrackingRobot:
                   numberofthreads = None ):
         self.robot           = robot
         self.tracker         = tracker
-        self.resolution      = resolution \
-            if resolution is None \
-            else self.defaultresolution
-        self.numberofthreads = numberofthreads \
-            if numberofthreads is None \
-            else self.defaultnumberofthreads
+        self.resolution      = (resolution if resolution is not None
+                                else self.defaultresolution)
+        self.numberofthreads = (numberofthreads if numberofthreads is not None
+                                else self.defaultnumberofthreads)
+
+    # Process any pending key presses in the opencv window
+    # Process these as remote controls for the robot
+    def _handlekeypresses():
+        for i in range(5):
+            c = cv2.waitKey( 50 )
+            if (c < 0):        # No keys ready
+                return True
+            if self.robot.RemoteControl( c ) is None:
+                return False   # Quit key ("q") was pressed
+        return True
 
     # The function to process each captured image
     # Process each image to identify location of object
@@ -33,14 +42,8 @@ class TrackingRobot:
         posX, posY, area = self.tracker.Track( stream )
         # Send the coordinates to the robot
         self.robot.TrackObject( posX, posY, area )
-        # Process any pending key presses (up to 5 at a time)
-        for i in range(5):
-            c = cv2.waitKey( 50 )
-            if (c < 0):  # No keys ready
-                return True
-            if self.robot.RemoteControl( c ) is None:
-                return False
-        return True
+        # Process any pending key presses
+        return _handlekeypresses()
 
     # Setup the camera and run the image capture process
     def run( self ):
@@ -51,7 +54,7 @@ class TrackingRobot:
                                          self.resolution[1] )
             camera.resolution         = self.resolution
             camera.framerate          = 10
-            # camera.exposure_mode     = 'off'
+            # camera.exposure_mode    = 'off'
             camera.ISO                = 800
             camera.image_effect       = 'blur'
             camera.awb_mode           = 'off' # 'fluorescent'
@@ -60,12 +63,12 @@ class TrackingRobot:
             # time.sleep(2)
             # Setup the multi-threaded image processing factory
             with imageprocessor.ProcessorManager(
-                numberofthreads      = self.numberofthreads,
-                processingfunction   = self.doObjectTracking
-                ) as processors:
-                camera.capture_sequence(
-                    processors.streams(),
-                    use_video_port=True )
+                numberofthreads       = self.numberofthreads,
+                processingfunction    = self.doObjectTracking
+                ) as processor:
+                # Start the PiCamera capture_sequence
+                camera.capture_sequence( processor.streams(),
+                                         use_video_port=True )
 
     def close( self ):
         self.tracker.close()

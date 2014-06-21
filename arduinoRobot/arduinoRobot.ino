@@ -1,15 +1,14 @@
 // -*- c++ -*-
-#include <Wire.h>
-#include <Servo.h>
-#include <PID_v1.h>
+#include <Arduino.h>
 
-#include "Commands.h"
+#include "Setup.h"
 
 void setup()
 {
-    pinMode(13, OUTPUT);          // To control the Arduino LED
-    Serial.begin(9600);           // For printing diagnostic outputs
-    SetupCommands();
+    pinMode( 13, OUTPUT );          // To control the Arduino LED
+    Serial.begin( 9600 );           // For printing diagnostic outputs
+
+    SetupRobot();
 }
 
 void loop()
@@ -23,16 +22,17 @@ void loop()
     }
     if (tick % period == 0) {
 	if (ledstate == 0) {
-	    digitalWrite(13, HIGH); // set the LED on
+	    digitalWrite( 13, HIGH ); // set the LED on
 	    ledstate = 1;
 	}else{
-	    digitalWrite(13, LOW); // set the LED off
+	    digitalWrite( 13, LOW ); // set the LED off
 	    ledstate = 0;
 	}
     }
-    LoopCommands();
 
-    delay(1);
+    LoopRobot();
+
+    delay( 1 );
     tick++;
 }
 

@@ -22,7 +22,7 @@ parser.add_argument(
     help="Eliminate the contour finding part of the object tracking"
     )
 parser.add_argument(
-    "--threads", type=int, default=4, choices=[2,3,4,5,5,6,7,8],
+    "--threads", type=int, default=4, choices=[2,3,4,5,6,7,8],
     help="Number of threads to use for the image processing"
     )
 args = parser.parse_args()
@@ -46,18 +46,18 @@ robot = arduinorobot.ArduinoRobot(
 
 # Create a ColourTracker instance to track objects
 tracker = colourtracker.ColourTracker(
-    hsv_slice           = hsvvalues.hsvvalues["redball"],
-    use_contours        = not args.nocontours,
-    show_images         = args.show,
-    tune_hsv_thresholds = args.tunehsv
+    hsv_slice        = hsvvalues.hsvvalues["redball"],
+    use_contours     = not args.nocontours,
+    show_images      = args.show,
+    tune_hsv         = args.tunehsv
     )
 
 # Assemble our combined TrackingRobot from a robot and a tracker
 trackingrobot = trackingrobot.TrackingRobot(
-    robot           = robot,
-    tracker         = tracker,
-    resolution      = (320, 240),
-    numberofthreads = args.threads
+    robot            = robot,
+    tracker          = tracker,
+    resolution       = (320, 240),
+    numberofthreads  = args.threads
     )
 
 # Now turn on the robot which will:

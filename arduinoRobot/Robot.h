@@ -3,28 +3,20 @@
 #ifndef ROBOT_H
 #define ROBOT_H
 
-#include "Motor.h"
+#include "Wheel.h"
 #include "Head.h"
 
+// A "Robot" is built from a "Head" and two "Wheels"
 class Robot {
 public:
-  Robot(   Motor&       leftwheel_,
-	   Motor&       rightwheel_,
-	   Head&        head_
-    )
-    :      leftwheel    ( leftwheel_ ),
-	   rightwheel   ( rightwheel_ ),
-	   head         ( head_ ),
-	   m_headangle  ( 0 ),
-	   m_leftspeed  ( 0 ),
-	   m_rightspeed ( 0 ),
-	   m_speed      ( 0 ),
-	   m_direction  ( 0 ) 
-    {};
+  Robot(   Wheel&       leftwheel,
+	   Wheel&       rightwheel,
+	   Head&        head
+    );
   
-  boolean  Go( int speed, int direction );
-  float    look( float angle );
-    
+  bool     run( int speed, int direction );
+  float    look( float angleX );
+
   void     initialise();
   void     enable();
   void     disable();
@@ -33,12 +25,15 @@ public:
   int      speed();
   int      direction();
 
-  boolean  Loop();
+  bool     Loop();
 
-  Motor&   leftwheel;
-  Motor&   rightwheel;
-  Head&    head;
+  Wheel&   leftwheel()  { return m_leftwheel;  };
+  Wheel&   rightwheel() { return m_rightwheel; };
+  Head&    head()       { return m_head;       };
 private:
+  Wheel&   m_leftwheel;
+  Wheel&   m_rightwheel;
+  Head&    m_head;
   float    m_headangle;
   int      m_leftspeed;
   int      m_rightspeed;
@@ -47,7 +42,7 @@ private:
 };
 
 
-#endif ROBOT_H
+#endif //ROBOT_H
 
 // Local Variables:
 // c-basic-offset: 2

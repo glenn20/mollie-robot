@@ -2,24 +2,25 @@ import numpy as np
 import cv2
 
 class ColourTracker():
+    HSV_all = [np.array( [   0,   0,   0 ], np.uint8 ),
+               np.array( [ 179, 255, 255 ], np.uint8 )]
+
     def __init__( self,
-                  hsv_slice           = None,
-                  use_contours        = True,
-                  show_images         = False,
-                  tune_hsv_thresholds = False
+                  hsv_slice    = None,
+                  use_contours = True,
+                  show_images  = False,
+                  tune_hsv     = False
                   ):
-        self.HSV_all = [np.array( [   0,   0,   0 ], np.uint8 ),
-                        np.array( [ 179, 255, 255 ], np.uint8 )]
-        self.HSV_slice = self.HSV_all
-        if hsv_slice is not None:
-            self.HSV_slice = hsv_slice
+        self.HSV_slice    = (hsv_slice
+                             if hsv_slice is not None
+                             else self.__class__.HSV_all)
         self.use_contours = use_contours
-        self.show_images = show_images
-        self.tune_hsv_thresholds = tune_hsv_thresholds
+        self.show_images  = show_images
+        self.tune_hsv     = tune_hsv
         cv2.namedWindow( "output", 1 )
         if self.show_images:
             cv2.namedWindow( "processed", 1 )
-        if self.tune_hsv_thresholds:
+        if self.tune_hsv:
             self.SetupHSVTuning()
 
     # return a monochrome image with only pixels between the HSV range
@@ -33,24 +34,24 @@ class ColourTracker():
             None, iterations=8 )
 
     # Calculate moments from the largest contour of the thresholded image
-    def _getContourMoments( self, imgFiltered, img ):
-        contours, heirarchy = cv2.findContours( imgFiltered,
-                                                cv2.RETR_EXTERNAL,
-                                                cv2.CHAIN_APPROX_SIMPLE )
+    def _getMoments( self, imgFiltered, img ):
+        # If use_contours is "off": calculate moments from threshold image
+        if not self.use_contours:
+            return cv2.moments( imgFiltered, 0 )
+
+        contours, _ = cv2.findContours( imgFiltered,
+                                        cv2.RETR_EXTERNAL,
+                                        cv2.CHAIN_APPROX_SIMPLE )
+        if not contours or len(contours) > 20:
+            return None
+        # Get the contour with maximum area
+        bestcontour = max( contours, key=lambda c: cv2.contourArea( c ) )
+        moments = cv2.moments( bestcontour, 0 )
         if self.show_images:
-            cv2.drawContours( img, contours, -1, (0,0,255), 2 ) 
-        maxarea = 0
-        bestcontour = None
-        moments = None
-        for contour in contours:
-            area = cv2.contourArea( contour )
-            if (area > maxarea):
-                maxarea = area
-                bestcontour = contour
-        if bestcontour is not None:
-            moments = cv2.moments( bestcontour, 0 )
-            if self.show_images:
-                cv2.drawContours( img, [bestcontour], 0, (255,0,0), 2 )
+            # Draw all the contours in red
+            cv2.drawContours( img, contours,     -1, (0,0,255), 2 )
+            # Draw the max contour in blue
+            cv2.drawContours( img, [bestcontour], 0, (255,0,0), 2 )
         return moments
 
     # Read an image from the stream
@@ -68,15 +69,11 @@ class ColourTracker():
         imgFiltered = self._ColorThreshold( img )
 
         if self.show_images:
+            # Display threshold image now - contouring degrades the image
             cv2.imshow( "processed", imgFiltered )
 
-        moments = None
-        if not self.use_contours:
-            # Calculate moments from threshold image
-            moments = cv2.moments( imgFiltered, 0 )
-        else:
-            # Calculate moments from the largest contour
-            moments = self._getContourMoments( imgFiltered, img )
+        # Calculate moments from the largest contour, or the threshold image
+        moments = self._getMoments( imgFiltered, img )
 
         area = 0
         if moments is not None:
@@ -144,7 +141,7 @@ class ColourTracker():
 
     def close():
         # If we were adjusting HSV slice values, print them out
-        if self.tune_hsv_thresholds:
+        if self.tune_hsv:
             print( "HSV_min = %03d %03d %03d"
                    % (self.HSV_slice[0][0],
                       self.HSV_slice[0][1],

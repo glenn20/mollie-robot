@@ -1,5 +1,6 @@
 import smbus
 import time
+import io
 
 class ArduinoComms():
     def __init__( self, I2Cbusnumber = 0, I2Caddress = 0x01, dummy = False ):
@@ -34,7 +35,7 @@ class ArduinoComms():
         return -1
 
     # Write a whole line of text to the I2C bus and end with a newline char
-    def writeLine( self, line ):
+    def writeline( self, line ):
         for c in line:
             self.writeCharacter( c )
         # Add an end-of-line character at the end
@@ -53,7 +54,7 @@ class ArduinoComms():
             print( command )   # Diagnostic
             return True
         # Write the command to the arduino
-        self.writeCommand( command )
+        self.writeline( command )
         i = 0
         # Check the status from the arduino - wait for it to be non-zero
         while status == 0 and i < 20:
