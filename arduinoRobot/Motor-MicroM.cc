@@ -12,7 +12,7 @@ MotorMicroM::MotorMicroM(
 {
 }
 
-void MotorMicroM::initialise()
+void MotorMicroM::doinitialise()
 {
   if (m_leftmotor) {
     // Only initialise once - ie. for the left motor

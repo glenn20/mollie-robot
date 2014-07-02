@@ -1,7 +1,33 @@
+"""
+An interface to manage an Arduino controlled robot.
+
+Classes:
+    ArduinoRobot: The manager of the Arduino robot.
+"""
+
 # Construct robots with a comms object
 # Just requires a "send" method to send commands to the arduino
 class ArduinoRobot():
+    """
+    An interface to an Arduino controlled robot.
+
+    Methods:
+        __init__(): Construct the interface.
+        send(): Send a command to the arduino controller.
+        Run(): Tell the robot to move.
+        Look(): Point the robot camera in the given direction.
+        Track(): Tell the robot to track to the given directions.
+        TrackObject(): Tell the robot to track the object at the coordinates.
+        RemoteControl(c): Process a keypress as a remote control for robot.
+    """
+
     def __init__( self, arduinoComms ):
+        """
+        Construct an interface object for the Arduino robot.
+
+        Arguments:
+            arduinoComms (ArduinoComms): I2C bus comms interface
+        """
         self.speed      = 0
         self.direction  = 0
         self.angle      = 0
@@ -15,10 +41,25 @@ class ArduinoRobot():
                       else maxn))
 
     def send( self, command ):
+        """
+        Send the supplied command to the Arduino robot controller.
+
+        Arguments:
+            command (str): the text of the command to send.
+        Returns:
+            True on success, False on falure.
+        """
         return self.arduino.send( command )
 
     # Tell the robot to move at "speed" in "direction"
     def Run( self, speed, direction=0 ):
+        """
+        Tell the robot to move at the given speed in the given direction.
+
+        Arguments:
+            speed (int): speed at which the robot should move.
+            direction: turn left (-1) or right (1), or straight ahead (0)
+        """
         self.speed     = self._constrain( speed, -255, 255 )
         self.direction = self._constrain( direction, -0.1, 0.1 )
         return self.send( "run %d %d"
@@ -26,17 +67,42 @@ class ArduinoRobot():
                              int(round(self.direction * 1000))) )
 
     # Tell the robot to point camera at "angle"
-    def Look( self, angle ):
+    def Look( self, angleX ):
+        """
+        Tell the robot to turn the camera to point in the given direction.
+
+        Arguments:
+            angle: Angle to point the camera (-90.0 to 90.0)
+        Returns:
+            True on success, False on failure.
+        """
         self.angle = self._constrain( angle, -90, 90 )
         return self.send( "look %d"
                           % (angle) ) 
 
     # Tell the robot to track to the given angles
     def Track( self, x, y ):
+        """
+        Tell the robot controller to track the object in the given direction.
+
+        Arguments:
+            x: Horizontal angle of the object to track.
+            y: Vertical angle of the object to track.
+        """
         return self.send( "track %d %d"
                           % (x, y) ) 
 
     def TrackObject( self, posX, posY, area ):
+        """
+        Tell the robot controller to track the object if tracking is enabled.
+
+        Also checks the identified object is large enough.
+
+        Arguments:
+            posX: The horizontal angle of the object.
+            posY: The vertical angle of the object.
+            area: The area of the identified object.
+        """
         # If the image is big enough - track it!!!
         if area > 50:
             if self.trackingOn == True:
@@ -49,6 +115,12 @@ class ArduinoRobot():
     
     # Process any key presses - return False if time to quit
     def RemoteControl( self, c ):
+        """
+        Interpret a key press (character) as a remote controller for the robot.
+
+        Arguments:
+            c: The remote control key.
+        """
         if c < 0:
             return True
         c = chr( c & 255 )  # Bugfix - this is needed for opencv on 64bit linux
@@ -86,4 +158,7 @@ class ArduinoRobot():
         return True
 
     def close():
+        """
+        Shutdown/close the robot.
+        """
         pass

@@ -11,9 +11,9 @@ class MotorMicroM: public Motor {
 public:
   MotorMicroM( bool leftmotor );
 
-  void       initialise();
-
 private:
+  void       doinitialise();
+
   int        dosetpower( int power );  // Set the wheel power (-255 to 255)
 
 private:

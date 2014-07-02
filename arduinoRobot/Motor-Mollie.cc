@@ -24,7 +24,7 @@ MotorMollie::MotorMollie(
 }
 
 // Initialise the 
-void MotorMollie::initialise()
+void MotorMollie::doinitialise()
 {
   // Initialise the arduino pins to control the DC motor
   pinMode( m_controlpin1, OUTPUT );
@@ -43,7 +43,7 @@ void MotorMollie::initialise()
 }
 
 // Implementation of the abstract base method to set the motor power
-// Write the power (voltage) setting (0-255) to the PWM Enable Pin.
+// Write the power (voltage) setting (-255->255) to the PWM Enable Pin.
 int MotorMollie::dosetpower( int power )
 {
   bool forwardp = (power >= 0);

@@ -20,10 +20,10 @@ public:
 	       int       enablepin
     );
 
-  // Setup the control and enable pins on the arduino
-  void  initialise();
-
 private:
+  // Setup the control and enable pins on the arduino
+  void  doinitialise();
+
   // Write the power setting to the (PWM) Enable pin on H-Bridge
   int   dosetpower( int power );   // Set the wheel power (0-255)
 
