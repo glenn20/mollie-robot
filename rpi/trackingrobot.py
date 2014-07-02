@@ -49,7 +49,7 @@ class TrackingRobot:
 
     # Process any pending key presses in the opencv window
     # Process these as remote controls for the robot
-    def _handlekeypresses():
+    def _handlekeypresses( self ):
         for i in range(5):
             c = cv2.waitKey( 50 )
             if (c < 0):        # No keys ready
@@ -76,7 +76,7 @@ class TrackingRobot:
         # Send the coordinates to the robot
         self.robot.TrackObject( posX, posY, area )
         # Process any pending key presses
-        return _handlekeypresses()
+        return self._handlekeypresses()
 
     # Setup the camera and run the image capture process
     def run( self ):
