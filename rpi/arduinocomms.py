@@ -114,7 +114,7 @@ class ArduinoComms():
             print( command )   # Diagnostic
             return True
         # Write the command to the arduino
-        self.writeline( command )
+        self._writeline( command )
         i = 0
         # Check the status from the arduino - wait for it to be non-zero
         while status == 0 and i < 20:
