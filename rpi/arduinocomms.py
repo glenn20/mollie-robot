@@ -82,7 +82,7 @@ class ArduinoComms():
             self._writecharacter( c )
         # Add an end-of-line character at the end
         self._writecharacter( '\n' )
-        return -1
+        return 0
 
     # Read back the status after writing a command to the Arduino
     def _readStatus( self ):
@@ -117,8 +117,9 @@ class ArduinoComms():
         self._writeline( command )
         i = 0
         # Check the status from the arduino - wait for it to be non-zero
+        status = self._readStatus()
         while status == 0 and i < 20:
-            status = self.readStatus()
+            status = self._readStatus()
             i=i+1
         if status == 0:
             # Timed out waiting for a non-zero status response

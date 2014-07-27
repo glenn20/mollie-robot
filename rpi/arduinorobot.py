@@ -76,9 +76,9 @@ class ArduinoRobot():
         Returns:
             True on success, False on failure.
         """
-        self.angle = self._constrain( angle, -90, 90 )
+        self.angle = self._constrain( angleX, -90, 90 )
         return self.send( "look %d"
-                          % (angle) ) 
+                          % (angleX) ) 
 
     # Tell the robot to track to the given angles
     def Track( self, x, y ):
