@@ -11,7 +11,6 @@ Encoder::Encoder( int   controlpin,
   : m_controlpin        ( controlpin ),
     m_interruptnumber   ( interruptnumber ),
     m_interruptfunction ( interruptfunction ),
-    m_pulse             ( 1000 ),
     m_count             ( 0 ),
     m_lasttime          ( 0 ),
     m_ndx               ( 0 ),
@@ -63,7 +62,6 @@ bool Encoder::valid()
 void Encoder::update()
 {
   unsigned long t = micros();
-  m_pulse = t - m_lasttime;
   m_lasttime = t;
   m_count++;
   m_times[m_ndx] = t;
@@ -86,8 +84,8 @@ double Encoder::speed()
   if (m_ntime == 0) {
     return 0.0;
   }
-  // If more than 0.8 seconds since last pulse received, return a speed of zero
-  if (micros() - m_lasttime > 800000) {
+  // If more than 0.1 seconds since last pulse received, return a speed of zero
+  if (micros() - m_lasttime > 100000) {
     return 0.0;
   }
 

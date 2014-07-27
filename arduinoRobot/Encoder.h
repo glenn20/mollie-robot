@@ -25,7 +25,6 @@ private:
   int                    m_controlpin;
   int                    m_interruptnumber;
   void                   (*m_interruptfunction)();
-  volatile unsigned long m_pulse;          // The width of the last pulse
   volatile unsigned long m_count;          // Total number of pulses recorded
   volatile unsigned long m_lasttime;       // The time of the last pulse
   volatile unsigned int  m_ndx;            // Where to put the next pulse time
