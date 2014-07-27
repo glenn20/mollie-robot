@@ -61,10 +61,10 @@ bool Wheel::Loop()
   if (!m_encoder.valid()) {
     return false;
   }
-  double pidoutput = 0.0;
-  boolean updated = false;
-  int power = m_motor.power();
-  int speed = m_encoder.speed();
+  double  pidoutput = 0.0;
+  boolean updated   = false;
+  int     power     = m_motor.power();
+  float   speed     = m_encoder.speed();
   if (m_speed == 0) {
     if (power != 0) {
       updated = true;
@@ -80,22 +80,22 @@ bool Wheel::Loop()
     m_motor.setpower( newpower );
   }
   
-  //static int tick = -1;
-  //tick++;
-  //if (tick % 10000 == 0 || tick % 10000 == 1) {
-    //Serial.print(name + ": ");
-    //Serial.print("setspeed = ");
-    //Serial.print(m_motorSpeed);
-    //Serial.print(" actual = ");
-    //Serial.print(encoder.speed()*10.0);
-    //Serial.print(" pidoutput = ");
-    //Serial.print(pidoutput);
-    //Serial.print(" pwm = ");
-    //Serial.print(m_pwm);
-    //Serial.print(" count = ");
-    //Serial.print(encoder.totalCount());
-    //Serial.println("");
-  //}
+  static int tick = -1;
+  tick++;
+  if (tick % 2000 == 0 || tick % 2000 == 1) {
+    Serial.print(m_name + ": ");
+    Serial.print("setspeed = ");
+    Serial.print(m_speed);
+    Serial.print(" actual = ");
+    Serial.print(speed);
+    Serial.print(" pidoutput = ");
+    Serial.print(pidoutput);
+    Serial.print(" power = ");
+    Serial.print(m_motor.power());
+    Serial.print(" count = ");
+    Serial.print(m_encoder.totalCount());
+    Serial.println("");
+  }
 
   return updated;
 }

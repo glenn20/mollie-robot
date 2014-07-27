@@ -36,7 +36,7 @@ char* ReadCommandLine()
 // status =  0 if command in progress
 // status =  1 if command completed successfully
 // status =  2 if command error
-static int cmdstatus = 1;
+static volatile int cmdstatus = 1;
 
 // Callback function for sending data to the RaspberryPi over the i2c bus
 void sendData()

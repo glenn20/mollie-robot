@@ -48,7 +48,7 @@ class ArduinoComms():
                 self.bus.write_byte( self.address, ord(c) )
                 return True
             except IOError:
-                print( "writeCommand(): IOError: trying again" )
+                print( "writecharacter(): IOError: trying again" )
         return False
 
     # Read one character from the I2C bus
@@ -65,7 +65,7 @@ class ArduinoComms():
                 c = self.bus.read_byte( self.address )
                 return c
             except IOError:
-                print( "readCommand(): IOError: trying again" )
+                print( "readcharacter(): IOError: trying again" )
         return -1
 
     # Write a whole line of text to the I2C bus and end with a newline char
