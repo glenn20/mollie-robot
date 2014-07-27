@@ -30,7 +30,8 @@ class TrackingRobot:
 
     def __init__( self, robot, tracker,
                   resolution      = None,
-                  numberofthreads = None ):
+                  numberofthreads = None,
+                  showpreview     = False ):
         """
         Construct a robot which tracks objects using the RPI camera.
 
@@ -46,6 +47,7 @@ class TrackingRobot:
                                 else self.defaultresolution)
         self.numberofthreads = (numberofthreads if numberofthreads is not None
                                 else self.defaultnumberofthreads)
+        self.showpreview     = showpreview
 
     # Process any pending key presses in the opencv window
     # Process these as remote controls for the robot
@@ -98,7 +100,8 @@ class TrackingRobot:
             camera.image_effect       = 'blur'
             camera.awb_mode           = 'off' # 'fluorescent'
             camera.awb_gains          = (1.2,1.2)
-            # camera.start_preview()
+            if (self.showpreview):
+				camera.start_preview()
             # time.sleep(2)
             # Setup the multi-threaded image processing factory
             with imageprocessor.ProcessorManager(

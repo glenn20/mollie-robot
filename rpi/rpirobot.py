@@ -14,6 +14,10 @@ parser.add_argument(
     help="Display the captured and processed images for tracking"
     )
 parser.add_argument(
+    "--preview", action="store_true",
+    help="Show the pi-camera preview window"
+    )
+parser.add_argument(
     "--norobot", action="store_true",
     help="Don't really send commands to the arduino robot - fake it"
     )
@@ -57,7 +61,8 @@ trackingrobot = trackingrobot.TrackingRobot(
     robot            = robot,
     tracker          = tracker,
     resolution       = (320, 240),
-    numberofthreads  = args.threads
+    numberofthreads  = args.threads,
+    showpreview      = args.preview
     )
 
 # Now turn on the robot which will:
