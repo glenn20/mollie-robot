@@ -36,6 +36,7 @@ private:
   String   m_name;                    // A name for diagnostic printouts
   MyPID    pid;                       // The PID controller
   int      m_speed;                   // The target speed for the wheel
+  unsigned long m_tick;               // An internal loop counter
 };
 
 #endif // WHEEL_H

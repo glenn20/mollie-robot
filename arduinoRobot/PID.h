@@ -14,7 +14,7 @@ public:
 	   m_pid(&m_actualspeed, &m_output, &m_setspeed, 0.5, 0, 0, DIRECT) {
     m_pid.SetOutputLimits(-50, 50);
     m_pid.SetMode(AUTOMATIC);
-    m_pid.SetSampleTime( 100 );
+    // m_pid.SetSampleTime( 100 );
   };
   
   bool UpdatePID( double setspeed,

@@ -10,7 +10,8 @@ Wheel::Wheel( Motor&      motor,
 	      m_encoder   ( encoder ),
 	      m_name      ( name ),
 	      pid         ( ),
-	      m_speed     ( 0 )
+	      m_speed     ( 0 ),
+	      m_tick      ( 0 )
 {
 }
 
@@ -61,6 +62,8 @@ bool Wheel::Loop()
   if (!m_encoder.valid()) {
     return false;
   }
+  // Increment our loop counter - see diagnostics below
+  m_tick++;
   double  pidoutput = 0.0;
   boolean updated   = false;
   int     power     = m_motor.power();
@@ -70,31 +73,29 @@ bool Wheel::Loop()
       updated = true;
       m_motor.setpower( 0 );
     }
-  } else if (pid.UpdatePID( m_speed, speed*10.0, &pidoutput )) {
+  } else if (pid.UpdatePID( m_speed, speed, &pidoutput )) {
     updated = true;
-    const int power_min = 100;
+    const int power_min = 0;
     if (power < power_min) {
       power = power_min;
     }
-    double newpower = constrain( power + pidoutput, 100, 255 );
+    double newpower = constrain( power + pidoutput, power_min, 250 );
     m_motor.setpower( newpower );
-  }
-  
-  static int tick = -1;
-  tick++;
-  if (tick % 2000 == 0 || tick % 2000 == 1) {
-    Serial.print(m_name + ": ");
-    Serial.print("setspeed = ");
-    Serial.print(m_speed);
-    Serial.print(" actual = ");
-    Serial.print(speed);
-    Serial.print(" pidoutput = ");
-    Serial.print(pidoutput);
-    Serial.print(" power = ");
-    Serial.print(m_motor.power());
-    Serial.print(" count = ");
-    Serial.print(m_encoder.totalCount());
-    Serial.println("");
+    if (m_tick > 2000) {
+      m_tick = 0;
+      Serial.print(m_name + ": ");
+      Serial.print("setspeed = ");
+      Serial.print(m_speed);
+      Serial.print(" actual = ");
+      Serial.print(speed);
+      Serial.print(" pidoutput = ");
+      Serial.print(pidoutput);
+      Serial.print(" power = ");
+      Serial.print(m_motor.power());
+      Serial.print(" count = ");
+      Serial.print(m_encoder.totalCount());
+      Serial.println("");
+    }
   }
 
   return updated;
