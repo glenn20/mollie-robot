@@ -1,17 +1,19 @@
 ARDUINO_DIR   = /usr/share/arduino
-ARDMK_DIR     = /usr
+ARDMK_DIR     = /usr/share/arduino
 AVR_TOOLS_DIR = /usr
 
 ifneq ("$(wildcard ./config.mk)","")
 include ./config.mk
 endif
 
-ARDUINO_PORT ?= $(firstword $(wildcard /dev/ttyACM? /dev/ttyUSB?) NotFound)
 BOARD_TAG    ?= uno
 
-ARDUINO_LIBS = 
+AVRDUDE       = avrdude-scp
+ARDUINO_PORT ?= pi@robbie:/dev/ttyS99
+#ARDUINO_PORT ?= $(firstword $(wildcard /dev/ttyACM? /dev/ttyUSB?) NotFound)
+
+ARDUINO_LIBS = PID_v1 microM AFMotor Servo Wire
 
 # default: upload
 
-include /usr/share/arduino/Arduino.mk
-
+include ./Arduino.mk

@@ -3,7 +3,7 @@
 #ifndef COMM_H
 #define COMM_H
 
-void SetupComms();
+void SetupComms( int i2c_slave_address );
 
 #endif //COMMS_H
 

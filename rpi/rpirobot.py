@@ -22,6 +22,10 @@ parser.add_argument(
     help="Don't really send commands to the arduino robot - fake it"
     )
 parser.add_argument(
+    "--nocamera", action="store_true",
+    help="Do not use the Raspberry Pi camera"
+    )
+parser.add_argument(
     "--nocontours", action="store_true",
     help="Eliminate the contour finding part of the object tracking"
     )

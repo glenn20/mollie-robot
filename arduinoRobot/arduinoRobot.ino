@@ -23,7 +23,7 @@ void loop()
   if (tick == 5000) {
     // After 5 seconds flash the LED slowly.
     // This is useful to check the arduino has not crashed.
-    halfperiod = 1000;
+    halfperiod = 2000;
   }
   if (tick % halfperiod == 0) {
     ledstate = ! ledstate;

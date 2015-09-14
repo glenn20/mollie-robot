@@ -5,9 +5,15 @@
 #include <Servo.h>
 #include <PID_v1.h>
 
-#ifdef USEMICROM
+#define USEAFMOTOR
+
+#if defined(USEMICROM)
 // The Dagu MicroMagician Motor Control library
 #include <microM.h>
+#endif
+#if defined(USEAFMOTOR)
+// The AdaFruit Motor Shield Library
+#include <AFMotor.h>
 #endif
 
 #include "Setup.h"
@@ -20,8 +26,10 @@
 #include "Robot.h"
 
 // Use the Mollie implementation of the Motor class
-#ifdef USEMICROM
+#if defined(USEMICROM)
 #include "Motor-MicroM.h"
+#elif defined(USEAFMOTOR)
+#include "Motor-AFMotor.h"
 #else
 #include "Motor-Mollie.h"
 #endif
@@ -45,13 +53,19 @@ Encoder rightencoder(    // Right wheel encoder
   rightEncoderISR          // Interrupt service routine for this encoder
   );
 
-#ifdef USEMICROM
+#if defined(USEMICROM)
 MotorMicroM leftmotor(   // Left wheel DC motor controller
   true                     // This is the left motor on the controller
   );
-
 MotorMicroM rightmotor(  // Right wheel DC motor controller
   false                    // This NOT the left motor on the controller
+  );
+#elif defined(USEAFMOTOR)
+MotorAFMotor leftmotor(   // Left wheel DC motor controller
+  2                       // Left wheel attached to Motor 2
+  );
+MotorAFMotor rightmotor(  // Right wheel DC motor controller
+  1                       // Right wheel attached to Motor 1
   );
 #else
 MotorMollie leftmotor(   // Left wheel DC motor controller
@@ -59,7 +73,6 @@ MotorMollie leftmotor(   // Left wheel DC motor controller
   4,                       // Arduino pin for the second H-Bridge control pin
   6                        // Arduino PWN pin for the H-Bridge Enable pin
   );
-
 MotorMollie rightmotor(  // Right wheel DC motor controller
   5,                       // Arduino pin for the first  H-Bridge control pin
   8,                       // Arduino pin for the second H-Bridge control pin
@@ -109,7 +122,8 @@ PID myPIDbody(&Inputbody, &Outputbody, &Setpointbody, 5.0, 0.0, 0.0, DIRECT);
 void SetupRobot()
 {
   // Initialise the I2C wire comms with the Raspberry Pi
-  SetupComms();
+  int i2c_slave_address = 0x4;
+  SetupComms( i2c_slave_address );
 
   // Initialise the Robot motors
   robbie.initialise();

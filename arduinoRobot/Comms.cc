@@ -6,8 +6,6 @@
 #include "Comms.h"
 #include "Setup.h"
 
-#define SLAVE_ADDRESS 0x04
-
 // Read whatever characters are ready from the RaspberryPi. 
 // If we have a whole line of text, return the line of text
 // Else if we don't have a whole line,
@@ -59,11 +57,11 @@ void receiveData(int byteCount)
   }
 }
 
-void SetupComms()
+void SetupComms( int i2c_slave_address )
 {
-  Wire.begin(SLAVE_ADDRESS);    // Setup as a slave on the i2c bus
-  Wire.onReceive(receiveData);  // Receive commands from RPI
-  Wire.onRequest(sendData);     // Send data when asked
+  Wire.begin( i2c_slave_address ); // Setup as a slave on the i2c bus
+  Wire.onReceive( receiveData );   // Receive commands from RPI
+  Wire.onRequest( sendData );      // Send data when asked
 }
 
 // Local Variables:
