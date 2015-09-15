@@ -36,9 +36,9 @@ private:
     Motor&   m_motor;                   // The Motor controller
     Encoder& m_encoder;                 // The Encoder controller
     String   m_name;                    // A name for diagnostic printouts
+    bool     m_usepid;
     MyPID    pid;                       // The PID controller
     int      m_speed;                   // The target speed for the wheel
-    bool     m_usepid;
     unsigned long m_tick;               // An internal loop counter
 };
 

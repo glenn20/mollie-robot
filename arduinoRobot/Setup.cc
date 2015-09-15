@@ -60,10 +60,10 @@ MotorMicroM rightmotor(		// Right wheel DC motor controller
     );
 #elif defined(USEAFMOTOR)
 MotorAFMotor leftmotor(		// Left wheel DC motor controller
-    2				//   Left wheel attached to Motor 2
+    3				//   Left wheel attached to Motor 3
     );
 MotorAFMotor rightmotor(	// Right wheel DC motor controller
-    1				//   Right wheel attached to Motor 1
+    4				//   Right wheel attached to Motor 4
     );
 #else
 MotorMollie leftmotor(		// Left wheel DC motor controller

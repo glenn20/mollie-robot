@@ -11,9 +11,9 @@ Wheel::Wheel(
     m_motor     ( motor ),
     m_encoder   ( encoder ),
     m_name      ( name ),
+    m_usepid    ( usepid ),
     pid         ( ),
     m_speed     ( 0 ),
-    m_usepid    ( true ),
     m_tick      ( 0 )
 {
 }
@@ -86,21 +86,21 @@ bool Wheel::Loop()
 	double newpower = constrain( power + pidoutput, power_min, 250 );
 	m_motor.setpower( newpower );
     }
-    // if (m_tick > 2000) {
-    //   m_tick = 0;
-    //   Serial.print(m_name + ": ");
-    //   Serial.print("setspeed = ");
-    //   Serial.print(m_speed);
-    //   Serial.print(" actual = ");
-    //   Serial.print(speed);
-    //   Serial.print(" pidoutput = ");
-    //   Serial.print(pidoutput);
-    //   Serial.print(" power = ");
-    //   Serial.print(m_motor.power());
-    //   Serial.print(" count = ");
-    //   Serial.print(m_encoder.count());
-    //   Serial.println("");
-    // }
+    if (m_tick > 2000) {
+      m_tick = 0;
+      Serial.print(m_name + ": ");
+      Serial.print("setspeed = ");
+      Serial.print(m_speed);
+      Serial.print(" actual = ");
+      Serial.print(speed);
+      Serial.print(" pidoutput = ");
+      Serial.print(pidoutput);
+      Serial.print(" power = ");
+      Serial.print(m_motor.power());
+      Serial.print(" count = ");
+      Serial.print(m_encoder.count());
+      Serial.println("");
+    }
 
     return updated;
 }
