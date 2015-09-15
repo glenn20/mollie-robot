@@ -14,7 +14,9 @@ class ArduinoRobot():
     Methods:
         __init__(): Construct the interface.
         send(): Send a command to the arduino controller.
+        Initialise(): Connect to the arduino and initialise the robot.
         Run(): Tell the robot to move.
+        Look(): Point the robot camera in the given direction.
         Look(): Point the robot camera in the given direction.
         Track(): Tell the robot to track to the given directions.
         TrackObject(): Tell the robot to track the object at the coordinates.
@@ -30,7 +32,8 @@ class ArduinoRobot():
         """
         self.speed      = 0
         self.direction  = 0
-        self.angle      = 0
+        self.angleX     = 0
+        self.angleY     = 0
         self.trackingOn = False
         self.arduino    = arduinoComms
 
@@ -51,6 +54,13 @@ class ArduinoRobot():
         """
         return self.arduino.send( command )
 
+    # Connect to and initialise the arduino robot
+    def Initialise( self ):
+        """
+        Connect to and initialise the arduino robot
+        """
+        return self.Look( 0, 0 ) and self.Run( 0, 0 )
+
     # Tell the robot to move at "speed" in "direction"
     def Run( self, speed, direction=0 ):
         """
@@ -67,18 +77,21 @@ class ArduinoRobot():
                              int(round(self.direction * 1000))) )
 
     # Tell the robot to point camera at "angle"
-    def Look( self, angleX ):
+    def Look( self, angleX, angleY = -1000 ):
         """
         Tell the robot to turn the camera to point in the given direction.
 
         Arguments:
-            angle: Angle to point the camera (-90.0 to 90.0)
+            angleX: Angle to point the camera (-90.0 to 90.0)
+            angleY: Angle to point the camera (-90.0 to 90.0)
         Returns:
             True on success, False on failure.
         """
-        self.angle = self._constrain( angleX, -90, 90 )
-        return self.send( "look %d"
-                          % (angleX) ) 
+        self.angleX = self._constrain( angleX, -90, 90 )
+        if angleY > -1000:
+            self.angleY = self._constrain( angleY, -90, 90 )
+        return self.send( "look %d %d"
+                          % (self.angleX, self.angleY) )
 
     # Tell the robot to track to the given angles
     def Track( self, x, y ):
@@ -139,10 +152,19 @@ class ArduinoRobot():
             return self.Run( 0, 0 )
         elif c == "z":
             # Turn camera/head to left
-            return self.Look( self.angle - 2 )
+            return self.Look( self.angleX - 2, self.angleY )
         elif c == "x":
             # Turn camera/head to right
-            return self.Look( self.angle + 2 )	
+            return self.Look( self.angleX + 2, self.angleY )	
+        elif c == "c":
+            # Turn camera/head down
+            return self.Look( self.angleX, self.angleY - 2 )
+        elif c == "d":
+            # Turn camera/head up
+            return self.Look( self.angleX, self.angleY + 2 )	
+        elif c == "s":
+            # Look straight ahead
+            return self.Look( 0.0, 0.0 )	
         elif c == "R":
             # Up key - Increase robot speed
             return self.Run( self.speed + 10, self.direction )

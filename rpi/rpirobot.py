@@ -3,7 +3,7 @@
 import argparse
 
 parser = argparse.ArgumentParser(
-    description='Run the RPI-ardino robot control program.'
+    description='Run the RPI-arduino robot control program.'
     )
 parser.add_argument(
     "--tunehsv", action="store_true",
@@ -51,6 +51,9 @@ robot = arduinorobot.ArduinoRobot(
         dummy        = args.norobot
         )
     )
+
+# Connect to and initialise the arduino robot
+robot.Initialise()
 
 # Create a ColourTracker instance to track objects
 tracker = colourtracker.ColourTracker(
