@@ -12,52 +12,52 @@
 //  - Control Pin 2    (Digital Output - sets motor direction)
 //  - Enable Pin       (PWM - sets motor power levels (voltage))
 MotorMollie::MotorMollie(
-  int       controlpin1,
-  int       controlpin2,
-  int       enablepin
-  )
-  : m_controlpin1  ( controlpin1 ),
-    m_controlpin2  ( controlpin2 ),
-    m_enablepin    ( enablepin ),
-    m_forwardp     ( false )
+    int       controlpin1,
+    int       controlpin2,
+    int       enablepin
+    )
+    : m_controlpin1  ( controlpin1 ),
+      m_controlpin2  ( controlpin2 ),
+      m_enablepin    ( enablepin ),
+      m_forwardp     ( false )
 {
 }
 
 // Initialise the 
 void MotorMollie::doinitialise()
 {
-  // Initialise the arduino pins to control the DC motor
-  pinMode( m_controlpin1, OUTPUT );
-  pinMode( m_controlpin2, OUTPUT );
-  pinMode( m_enablepin,   OUTPUT );
-  disable();
-  setpower( 0 );
+    // Initialise the arduino pins to control the DC motor
+    pinMode( m_controlpin1, OUTPUT );
+    pinMode( m_controlpin2, OUTPUT );
+    pinMode( m_enablepin,   OUTPUT );
+    disable();
+    setpower( 0 );
   
-  Serial.print( "Motor::initialise: Pins = " );
-  Serial.print( m_controlpin1 );
-  Serial.print( " " );
-  Serial.print( m_controlpin2 );
-  Serial.print( " " );
-  Serial.print( m_enablepin );
-  Serial.println( " " );
+    Serial.print( "Motor::initialise: Pins = " );
+    Serial.print( m_controlpin1 );
+    Serial.print( " " );
+    Serial.print( m_controlpin2 );
+    Serial.print( " " );
+    Serial.print( m_enablepin );
+    Serial.println( " " );
 }
 
 // Implementation of the abstract base method to set the motor power
 // Write the power (voltage) setting (-255->255) to the PWM Enable Pin.
 int MotorMollie::dosetpower( int power )
 {
-  bool forwardp = (power >= 0);
-  if (m_forwardp != forwardp) {
-    // If we have changed direction - set the H-bridge direction control
-    m_forwardp = forwardp;
-    digitalWrite( m_controlpin1, (forwardp) ? HIGH : LOW );
-    digitalWrite( m_controlpin2, (forwardp) ? LOW  : HIGH);
-    delay(1);
-  }
-  analogWrite( m_enablepin, power );
-  return power;
+    bool forwardp = (power >= 0);
+    if (m_forwardp != forwardp) {
+	// If we have changed direction - set the H-bridge direction control
+	m_forwardp = forwardp;
+	digitalWrite( m_controlpin1, (forwardp) ? HIGH : LOW );
+	digitalWrite( m_controlpin2, (forwardp) ? LOW  : HIGH);
+	delay(1);
+    }
+    analogWrite( m_enablepin, power );
+    return power;
 }
 
 // Local Variables:
-// c-basic-offset: 2
+// c-basic-offset: 4
 // End: 

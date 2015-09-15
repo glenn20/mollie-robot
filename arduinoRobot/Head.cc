@@ -4,87 +4,98 @@
 
 #include <Arduino.h>
 
-static const int servoMin =   0;   // looking left
-static const int servoMax = 179;   // looking right
-
-static const int angleMin = -89;
-static const int angleMax =  90;
-
-MyServo::MyServo(
-  int servopin
-  ) : m_servopin( servopin ),
-      m_angle   ( 0.0 ),
-      m_servo   ( )
+HeadServo::HeadServo(
+    int    servopin,
+    int    origin,
+    int    min,
+    int    max 
+    ) : m_servopin( servopin ),
+	m_angle   ( 0.0 ),
+	m_servo   ( ),
+	m_origin  ( origin ),
+	m_min     ( min ),
+	m_max     ( max )
 {
 }
 
-void MyServo::initialise()
+void HeadServo::initialise()
 {
-  if (m_servopin > 0) {
-    m_servo.attach( m_servopin );
-  }
-  Serial.print( "MyServo::initialise: servopin=" );
-  Serial.println( m_servopin );
+    if (m_servopin > 0) {
+	m_servo.attach( m_servopin );
+    }
+    setangle( 0.0 );
 
-  setangle( 0.0 );
+    Serial.print( "MyServo::initialise: servopin=" );
+    Serial.println( m_servopin );
 }
 
-float MyServo::setangle( float angle )
-{
-  m_angle = constrain( angle, angleMin, angleMax );
-
-  // Servo expects angle between 0 and 179
-  int servoangle = constrain( angle + 90, servoMin, servoMax );
-  if (m_servopin > 0) {
-    m_servo.write( servoangle );
-  }
-    
-  return m_angle;
+static int round_int( float r ) {
+    return (r > 0.0) ? (r + 0.5) : (r - 0.5); 
 }
 
-float MyServo::angle()
+float HeadServo::setangle( float angle )
 {
-  return m_angle;
+    int servoangle = round_int( angle + m_origin );
+    servoangle = constrain( servoangle, m_min, m_max );
+    m_angle = servoangle - m_origin;
+
+    if (m_servopin > 0) {
+	m_servo.write( servoangle );
+    }
+    Serial.print( "MyServo::setangle[pin=" );
+    Serial.print( m_servopin );
+    Serial.print( "] = " );
+    Serial.println( servoangle );
+  
+    return m_angle;
 }
 
-Head::Head( int servoxpin, int servoypin )
-  :  m_servoX ( servoxpin ),
-     m_servoY ( servoypin )
+float HeadServo::angle()
+{
+    return m_angle;
+}
+
+Head::Head(
+    HeadServo&  servox,
+    HeadServo&  servoy
+    ) :
+    m_servoX    ( servox ),
+    m_servoY    ( servoy )
 {
 }
 
 void Head::initialise()
 {
-  m_servoX.initialise();
-  m_servoY.initialise();
+    m_servoX.initialise();
+    m_servoY.initialise();
 }
 
 float Head::lookX( float angle )
 {
-  return m_servoX.setangle( angle );
+    return m_servoX.setangle( angle );
 }
 
 float Head::lookY( float angle )
 {
-  return m_servoY.setangle( angle );
-}
-
-float Head::angleX()
-{
-  return m_servoX.angle();
-}
-
-float Head::angleY()
-{
-  return m_servoY.angle();
+    return m_servoY.setangle( angle );
 }
 
 void Head::look( float angleX, float angleY )
 {
-  lookX( angleX );
-  lookY( angleY );
+    lookX( angleX );
+    lookY( angleY );
+}
+
+float Head::angleX()
+{
+    return m_servoX.angle();
+}
+
+float Head::angleY()
+{
+    return m_servoY.angle();
 }
 
 // Local Variables:
-// c-basic-offset: 2
+// c-basic-offset: 4
 // End: 

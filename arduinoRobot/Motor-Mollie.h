@@ -15,27 +15,27 @@
 
 class MotorMollie: public Motor {
 public:
-  MotorMollie( int       controlpin1,
-	       int       controlpin2,
-	       int       enablepin
-    );
+    MotorMollie( int       controlpin1,
+		 int       controlpin2,
+		 int       enablepin
+	);
 
 private:
-  // Setup the control and enable pins on the arduino
-  void  doinitialise();
+    // Setup the control and enable pins on the arduino
+    void  doinitialise();
 
-  // Write the power setting to the (PWM) Enable pin on H-Bridge
-  int   dosetpower( int power );   // Set the wheel power (0-255)
+    // Write the power setting to the (PWM) Enable pin on H-Bridge
+    int   dosetpower( int power );   // Set the wheel power (0-255)
 
 private:
-  int      m_controlpin1;
-  int      m_controlpin2;
-  int      m_enablepin;
-  bool     m_forwardp;
+    int      m_controlpin1;
+    int      m_controlpin2;
+    int      m_enablepin;
+    bool     m_forwardp;
 };
 
 #endif //MOTOR_MOLLIE_H
 
 // Local Variables:
-// c-basic-offset: 2
+// c-basic-offset: 4
 // End: 

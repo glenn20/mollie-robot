@@ -9,48 +9,48 @@
 // This base class is a valid dummy implementation.
 class Motor {
 public:
-  Motor() {};
+    Motor() {};
 
-  void  initialise() {
-    doinitialise();
-  };
-  int   setpower( int power ) { // Set the motor power
-    if (power == m_power) {
-      return power;
-    }
-    return m_power = dosetpower( power );
-  };
-  void  enable() {              // Enable the motor
-    if (!m_enabled) {
-      m_enabled = true;
-      setpower( m_power );
-    }
-  }; 
-  void  disable() {             // Disable the motor
-    if (m_enabled) {
-      m_enabled = false;
-      setpower( 0 );
-    }
-  };
-  int   power() {               // Return the current power setting
-    return m_power;
-  };
-
-private:
-  // Private virtual method to actually set the motor power
-  virtual int  dosetpower( int power ) {
-    return power;
-  };
-  virtual void doinitialise() {
-  };
+    void  initialise() {
+	doinitialise();
+    };
+    int   setpower( int power ) { // Set the motor power
+	if (power == m_power) {
+	    return power;
+	}
+	return m_power = dosetpower( power );
+    };
+    void  enable() {              // Enable the motor
+	if (!m_enabled) {
+	    m_enabled = true;
+	    setpower( m_power );
+	}
+    }; 
+    void  disable() {             // Disable the motor
+	if (m_enabled) {
+	    m_enabled = false;
+	    setpower( 0 );
+	}
+    };
+    int   power() {               // Return the current power setting
+	return m_power;
+    };
 
 private:
-  int      m_power;
-  bool     m_enabled;
+    // Private virtual method to actually set the motor power
+    virtual int  dosetpower( int power ) {
+	return power;
+    };
+    virtual void doinitialise() {
+    };
+
+private:
+    int      m_power;
+    bool     m_enabled;
 };
 
 #endif //MOTOR_H
 
 // Local Variables:
-// c-basic-offset: 2
+// c-basic-offset: 4
 // End: 

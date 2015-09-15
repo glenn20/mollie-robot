@@ -11,5 +11,5 @@ bool RobotCommand( char* line );
 #endif //SETUP_H
 
 // Local Variables:
-// c-basic-offset: 2
+// c-basic-offset: 4
 // End: 

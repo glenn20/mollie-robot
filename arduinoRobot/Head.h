@@ -7,18 +7,25 @@
 
 // A helper class for the robot "Head"
 // This class trivially wraps the Arduino Servo class.
-class MyServo {
+class HeadServo {
 public:
-  MyServo( int servopin );
+    HeadServo( int servopin,
+	       int origin = 90,
+	       int min    = 0,
+	       int max    = 180
+	);
 
-  void  initialise();
-  float setangle( float angle );
-  float angle();
+    void  initialise();
+    float setangle( float angle );
+    float angle();
 
 private:
-  int   m_servopin;
-  float m_angle;
-  Servo m_servo;
+    int   m_servopin;
+    float m_angle;
+    Servo m_servo;
+    int   m_origin;
+    int   m_min;
+    int   m_max;
 };
 
 // A Head object represents the head of the robot
@@ -29,26 +36,29 @@ private:
 // turn horizontally
 class Head {
 public:
-  Head( int servoxpin, int servoypin = -1 );
+    Head(
+	HeadServo&  servox,
+	HeadServo&  servoy
+	);
 
-  void     initialise();
-  float    lookX( float angleX );  // Turn head to the given angle
-  float    lookY( float angleY );  // Turn head to the given angle
-  float    angleX();               // Get the current head turn angle
-  float    angleY();
-  void     look(  float angleX,
-		  float angleY );
+    void     initialise();
+    float    lookX( float angleX );  // Turn head to the given angle
+    float    lookY( float angleY );  // Turn head to the given angle
+    float    angleX();               // Get the current head turn angle
+    float    angleY();
+    void     look(  float angleX,
+		    float angleY );
 
-  float    look(  float angleX ) { return lookX( angleX ); };
+    float    look(  float angleX ) { return lookX( angleX ); };
 
 private:
-  MyServo    m_servoX;
-  MyServo    m_servoY;
-  //MyPID  m_pid;
+    HeadServo&   m_servoX;
+    HeadServo&   m_servoY;
+    //MyPID  m_pid;
 };
 
 #endif //HEAD_H
 
 // Local Variables:
-// c-basic-offset: 2
+// c-basic-offset: 4
 // End: 
