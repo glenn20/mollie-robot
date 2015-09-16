@@ -17,3 +17,6 @@ ARDUINO_LIBS = PID_v1 microM AFMotor Servo Wire
 # default: upload
 
 include ./Arduino.mk
+
+get_monitor_port = $(ARDUINO_PORT)
+
