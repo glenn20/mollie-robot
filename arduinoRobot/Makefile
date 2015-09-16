@@ -8,15 +8,15 @@ endif
 
 BOARD_TAG    ?= uno
 
-AVRDUDE       = avrdude-scp
-ARDUINO_PORT ?= pi@robbie:/dev/ttyS99
-#ARDUINO_PORT ?= $(firstword $(wildcard /dev/ttyACM? /dev/ttyUSB?) NotFound)
+ARDUINO_PORT ?= $(firstword $(wildcard /dev/ttyACM? /dev/ttyUSB?) NotFound)
 
-ARDUINO_LIBS = PID_v1 microM AFMotor Servo Wire
+ARDUINO_LIBS  = PID_v1 microM AFMotor Servo Wire
 
 # default: upload
 
-include ./Arduino.mk
+include /usr/share/arduino/Arduino.mk
 
+# This is an override of Arduino.mk so "make do_upload" won't second guess ARDUINO_PORT
+#  - I need this to use avrdude-scp
 get_monitor_port = $(ARDUINO_PORT)
 
