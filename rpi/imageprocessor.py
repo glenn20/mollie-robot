@@ -115,10 +115,10 @@ class ProcessorManager():
                 self.done = True
         # Print out some progress reports
         self.processedcount += 1
-        if (self.processedcount % 10 == 0):
-            print( "Processed %4d" % (self.processedcount) )
+        # if (self.processedcount % 10 == 0):
+        #     print( "Processed %4d" % (self.processedcount) )
 
-    def streams( self ):
+    def streamgenerator( self ):
         """
         Generator to yield the streams for image capture and acquisition.
 

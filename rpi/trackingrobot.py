@@ -109,7 +109,7 @@ class TrackingRobot:
                 processingfunction    = self.doObjectTracking
                 ) as processor:
                 # Start the PiCamera capture_sequence
-                camera.capture_sequence( processor.streams(),
+                camera.capture_sequence( processor.streamgenerator(),
                                          use_video_port=True )
 
     def close( self ):

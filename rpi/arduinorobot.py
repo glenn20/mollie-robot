@@ -31,6 +31,7 @@ class ArduinoRobot():
             arduinoComms (ArduinoComms): I2C bus comms interface
         """
         self.speed      = 0
+        self.power      = 0
         self.direction  = 0
         self.angleX     = 0
         self.angleY     = 0
@@ -75,6 +76,19 @@ class ArduinoRobot():
         return self.send( "run %d %d"
                           % (int(round(self.speed)),
                              int(round(self.direction * 1000))) )
+
+    # Tell the robot to move at "speed" in "direction"
+    def Power( self, power ):
+        """
+        Set the robot motor power.
+
+        Arguments:
+            power (int): power setting for robot motors.
+        """
+        self.power     = self._constrain( power, -255, 255 )
+        return self.send( "setpower %d %d"
+                          % (int(round(self.power)),
+                             int(round(self.power))) )
 
     # Tell the robot to point camera at "angle"
     def Look( self, angleX, angleY = -1000 ):
@@ -149,7 +163,7 @@ class ArduinoRobot():
             return True
         elif c == " ":
             # Stop robot command
-            return self.Run( 0, 0 )
+            return self.Power( 0 )
         elif c == "z":
             # Turn camera/head to left
             return self.Look( self.angleX - 2, self.angleY )
@@ -167,10 +181,16 @@ class ArduinoRobot():
             return self.Look( 0.0, 0.0 )	
         elif c == "R":
             # Up key - Increase robot speed
-            return self.Run( self.speed + 10, self.direction )
+            return self.Run( self.speed + 2, self.direction )
         elif c == "T":
             # Down key - Decrease robot speed
-            return self.Run( self.speed - 10, self.direction )
+            return self.Run( self.speed - 2, self.direction )
+        elif c == "f":
+            # Up key - Increase robot speed
+            return self.Power( self.power + 10 )
+        elif c == "v":
+            # Down key - Decrease robot speed
+            return self.Power( self.power - 10 )
         elif c == "S":
             # Right key - Turn robot to the right
             return self.Run( self.speed, self.direction + 0.02 )
