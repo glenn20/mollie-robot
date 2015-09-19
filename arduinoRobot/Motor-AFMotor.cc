@@ -37,10 +37,10 @@ int MotorAFMotor::dosetpower( int power )
 	m_motor.run( (forwardp) ? FORWARD : BACKWARD );
     }
     m_motor.setSpeed( power );
-    Serial.print( "AFMotor::dosetpower[" );
-    Serial.print( m_motornum );
-    Serial.print( "] = " );
-    Serial.println( power );
+    // Serial.print( "AFMotor::dosetpower[" );
+    // Serial.print( m_motornum );
+    // Serial.print( "] = " );
+    // Serial.println( power );
     return power;
 }
 
