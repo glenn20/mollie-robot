@@ -7,17 +7,57 @@ to identify objects to be tracked by the robot.
 Robot control is through commands passed over the I2C bus to an Arduino Board.
 """
 
+import threading
+
 import cv2
 import picamera
 
-# from getch import getch
+#from getch import getch
 import arduinocomms
 import arduinorobot
 import colourtracker
 import imageprocessor
 
+class _Getch:
+    """Gets a single character from standard input.  Does not echo to the
+screen."""
+    def __init__(self):
+        try:
+            self.impl = _GetchWindows()
+        except ImportError:
+            self.impl = _GetchUnix()
 
-class TrackingRobot:
+    def __call__(self): return self.impl()
+
+
+class _GetchUnix:
+    def __init__(self):
+        import tty, sys
+
+    def __call__(self):
+        import sys, tty, termios
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+
+class _GetchWindows:
+    def __init__(self):
+        import msvcrt
+
+    def __call__(self):
+        import msvcrt
+        return msvcrt.getch()
+
+
+getch = _Getch()
+
+
+class TrackingRobot( threading.Thread ):
     """
     Create an object tracker and remote control for an arduino robot.
 
@@ -41,6 +81,7 @@ class TrackingRobot:
             resolution (x,y): Resolution for image capture (RPI camera)
             numberofthreads: Number of threads for image processing
         """
+        super( TrackingRobot, self ).__init__()
         self.robot           = robot
         self.tracker         = tracker
         self.resolution      = (resolution if resolution is not None
@@ -48,14 +89,16 @@ class TrackingRobot:
         self.numberofthreads = (numberofthreads if numberofthreads is not None
                                 else self.defaultnumberofthreads)
         self.showpreview     = showpreview
+        self.start()    # Run the "run()" method in a new thread
 
     # Process any pending key presses in the opencv window
     # Process these as remote controls for the robot
     def _handlekeypresses( self ):
         for i in range(5):
             c = cv2.waitKey( 50 )
-            if (c < 0):        # No keys ready
+            if c < 0:        # No keys ready
                 return True
+            c = chr( c & 255 )  # Bugfix - this is needed for opencv on 64bit linux
             if self.robot.RemoteControl( c ) is None:
                 return False   # Quit key ("q") was pressed
         return True
@@ -85,7 +128,7 @@ class TrackingRobot:
         """
         Run the image capture and processing and robot control loop.
 
-        Main execution loop for the robot. Setups up and executes the
+        Setups up and executes the
         multi-threaded image capture and processing.
         """
         with picamera.PiCamera() as camera:
@@ -111,6 +154,18 @@ class TrackingRobot:
                 # Start the PiCamera capture_sequence
                 camera.capture_sequence( processor.streamgenerator(),
                                          use_video_port=True )
+
+    def loop( self ):
+        """
+        Main execution loop for the robot.
+        Reads keypresses and issues commands to control the robot.
+        """
+        while True:
+            print( "Call getch()..." )
+            c = getch()
+            print( ">>  %s\r" % (c) )
+            if self.robot.RemoteControl( c ) is None:
+                return False   # Quit key ("q") was pressed
 
     def close( self ):
         """

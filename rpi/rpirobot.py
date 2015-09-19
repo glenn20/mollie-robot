@@ -77,7 +77,9 @@ trackingrobot = trackingrobot.TrackingRobot(
 # - Use color slicing to locate objects in the images (multithreaded)
 # - Send the coords of the object to the arduino controlling the robot
 # - trap any keypresses and use them as remotecontrol for the robot
-trackingrobot.run()
+trackingrobot.loop()
+
+trackingrobot.close()
 
 # Local Variables:
 # python-indent: 4

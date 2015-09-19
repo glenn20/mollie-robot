@@ -139,6 +139,7 @@ class ProcessorManager():
                 processor = (self.pool.pop() if self.pool
                              else None)
             if processor:
+                processor.time = time.time() # Record the time for the capture
                 yield processor.stream
                 # When the camera asks for the next stream wake up the thread
                 # owning this Processor

@@ -148,9 +148,6 @@ class ArduinoRobot():
         Arguments:
             c: The remote control key.
         """
-        if c < 0:
-            return True
-        c = chr( c & 255 )  # Bugfix - this is needed for opencv on 64bit linux
         print( ">>  %s" % (c) )
         if c == "q":
             # Quit the program
