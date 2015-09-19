@@ -81,15 +81,13 @@ MotorMollie rightmotor(		// Right wheel DC motor controller
 Wheel leftwheel   (		// Left wheel DC motor and encoder
     leftmotor,
     leftencoder,
-    "Leftwheel",
-    false
+    "Leftwheel"
     );
 
 Wheel rightwheel  (		// Right wheel DC motor and encoder
     rightmotor,
     rightencoder,
-    "Rightwheel",
-    false
+    "Rightwheel"
     );
 
 HeadServo headX (
@@ -187,6 +185,13 @@ bool RobotCommand( char* line )
 	int speed = numbers[0];
 	int direction = numbers[1];
 	robbie.run( speed, direction );
+    } else if (cmd == "setpower" && n == 2) {
+	// For all the motor numbers provided, set them to the speed provided
+	//   power 235 -235"
+	int power1 = numbers[0];
+	int power2 = numbers[1];
+	robbie.leftwheel().setpower( power1 );
+	robbie.rightwheel().setpower( power2 );
     } else if (cmd == "setdirection" && n == 1) {
 	// Set the motor directions
 	// 1 means Forward, 0 means Backward
