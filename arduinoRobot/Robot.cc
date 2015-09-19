@@ -55,6 +55,14 @@ int Robot::direction()
     return m_direction;
 }
 
+int Robot::setpower( int power )
+{
+    m_leftwheel.setpower( power );
+    m_rightwheel.setpower( power );
+
+    return true;
+}
+
 bool Robot::run( int speed, int direction )
 {
     if (speed < -255) {

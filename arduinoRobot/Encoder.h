@@ -16,7 +16,7 @@ public:
     void     initialise();
     bool     valid();      // Return true if this a valid encoder
     void     update();     // Interrupt routine - record the encoder count
-    double   speed();      // Return the encoder speed in pulses per second
+    float    speed();      // Return the encoder speed in pulses per second
 
     // Return the total number of encoder pulses recorded
     unsigned long count();

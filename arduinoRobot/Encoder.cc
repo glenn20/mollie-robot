@@ -78,19 +78,22 @@ void Encoder::update()
 }
 
 // Return the speed in pulses per second
-double Encoder::speed()
+float Encoder::speed()
 {
+    if (!valid()) {
+	return 0.0;
+    }
     // No pulses have been recorded - just return a speed of zero
     if (m_ntime == 0) {
 	return 0.0;
     }
-    // If more than 0.1 seconds since last pulse, return a speed of zero
-    if (micros() - m_lasttime > 100000) {
+    // If more than 0.5 seconds since last pulse, return a speed of zero
+    if (micros() - m_lasttime > 500000) {
 	return 0.0;
     }
 
     // Speed is the (number of pulses -1) / (time between first and last pulse)
-    double ntime_seconds = m_ntime / 1000000.0;
+    float ntime_seconds = m_ntime / 1000000.0;
     return (m_npulses - 1) / ntime_seconds;
 }
 

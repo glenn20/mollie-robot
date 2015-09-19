@@ -25,6 +25,7 @@ public:
     int      rightspeed();
     int      speed();
     int      direction();
+    int      setpower( int power );
 
     bool     Loop();
 
