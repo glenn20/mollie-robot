@@ -3,12 +3,13 @@
 
 #include "Setup.h"
 
+// The Arduino output pin which is used to blink the onboard LED.
 static const int LED_PIN = 13;
 
 void setup()
 {
     pinMode( LED_PIN, OUTPUT );		// To control the Arduino LED
-    Serial.begin( 9600 );		// For printing diagnostic outputs
+    Serial.begin( 115200 );		// For printing diagnostic outputs
 
     SetupRobot();
 }
