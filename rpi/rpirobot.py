@@ -57,7 +57,7 @@ robot.Initialise()
 
 # Create a ColourTracker instance to track objects
 tracker = colourtracker.ColourTracker(
-    hsv_slice        = hsvvalues.hsvvalues["redball"],
+    hsv_slice        = hsvvalues.hsvvalues["bluething"],
     use_contours     = not args.nocontours,
     show_images      = args.show,
     tune_hsv         = args.tunehsv
