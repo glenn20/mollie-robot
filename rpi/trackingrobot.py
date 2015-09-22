@@ -7,7 +7,11 @@ to identify objects to be tracked by the robot.
 Robot control is through commands passed over the I2C bus to an Arduino Board.
 """
 
+from __future__ import print_function
+
 import threading
+import time
+import sys, tty, termios
 
 import cv2
 import picamera
@@ -17,45 +21,6 @@ import arduinocomms
 import arduinorobot
 import colourtracker
 import imageprocessor
-
-class _Getch:
-    """Gets a single character from standard input.  Does not echo to the
-screen."""
-    def __init__(self):
-        try:
-            self.impl = _GetchWindows()
-        except ImportError:
-            self.impl = _GetchUnix()
-
-    def __call__(self): return self.impl()
-
-
-class _GetchUnix:
-    def __init__(self):
-        import tty, sys
-
-    def __call__(self):
-        import sys, tty, termios
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-
-class _GetchWindows:
-    def __init__(self):
-        import msvcrt
-
-    def __call__(self):
-        import msvcrt
-        return msvcrt.getch()
-
-
-getch = _Getch()
-
 
 class TrackingRobot( threading.Thread ):
     """
@@ -89,19 +54,17 @@ class TrackingRobot( threading.Thread ):
         self.numberofthreads = (numberofthreads if numberofthreads is not None
                                 else self.defaultnumberofthreads)
         self.showpreview     = showpreview
+        self.done            = False
         self.start()    # Run the "run()" method in a new thread
 
     # Process any pending key presses in the opencv window
     # Process these as remote controls for the robot
     def _handlekeypresses( self ):
-        for i in range(5):
-            c = cv2.waitKey( 50 )
-            if c < 0:        # No keys ready
-                return True
-            c = chr( c & 255 )  # Bugfix - this is needed for opencv on 64bit linux
-            if self.robot.RemoteControl( c ) is None:
-                return False   # Quit key ("q") was pressed
-        return True
+        c = cv2.waitKey( 50 )
+        if c < 0:        # No keys ready
+            return True
+        c = chr( c & 255 )  # Bugfix - this is needed for opencv on 64bit linux
+        return (self.robot.RemoteControl( c ) is not None)
 
     # The function to process each captured image
     # Process each image to identify location of object
@@ -121,7 +84,7 @@ class TrackingRobot( threading.Thread ):
         # Send the coordinates to the robot
         self.robot.TrackObject( posX, posY, area )
         # Process any pending key presses
-        return self._handlekeypresses()
+        return (not self.done) and self._handlekeypresses()
 
     # Setup the camera and run the image capture process
     def run( self ):
@@ -160,19 +123,32 @@ class TrackingRobot( threading.Thread ):
         Main execution loop for the robot.
         Reads keypresses and issues commands to control the robot.
         """
-        while True:
-            print( "Call getch()..." )
-            c = getch()
-            print( ">>  %s\r" % (c) )
-            if self.robot.RemoteControl( c ) is None:
-                return False   # Quit key ("q") was pressed
+        old_settings = termios.tcgetattr( sys.stdin.fileno() )
+        try:
+            tty.setraw( sys.stdin.fileno() )
+            while not self.done:
+                print( ">>", end=" " )
+                c = sys.stdin.read(1)
+                print( c, end="\r\n" )
+                if self.robot.RemoteControl( c ) is None:
+                    self.done = True
+        finally:
+            termios.tcsetattr( sys.stdin.fileno(),
+                               termios.TCSADRAIN,
+                               old_settings )
 
     def close( self ):
         """
         Close down the robot controller and object tracking components. 
         """
+        print( "Closing down robbie..." )
         self.tracker.close()
         self.robot.close()
+        while threading.active_count() > 1:
+            for t in threading.enumerate():
+                print( t )
+            print( '' )
+            time.sleep( 0.5 )
 
 # Local Variables:
 # python-indent: 4
