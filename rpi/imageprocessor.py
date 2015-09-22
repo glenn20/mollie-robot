@@ -28,7 +28,7 @@ class ImageProcessor( threading.Thread ):
         self.terminated  = False
         self.start()   # Run the "run()" method in a new thread
 
-    def run(self):
+    def run( self ):
         """
         Execute the image processing function on the stream buffer.
         """
@@ -56,7 +56,7 @@ class ProcessorManager():
     Can be invoked as a ContextManager object.
 
     Methods:
-    streams(): Generator function to yield the next stream for image capture
+    streamgenerator(): Generator function to yield the next stream for image capture
     report():  Print a summary of the image capture and processing stats
     close():   Close down the threads and print a report()
 
@@ -111,8 +111,7 @@ class ProcessorManager():
             stream (BytesIO): The stream containing the captured image data
         """
         if self.ProcessingFunc is not None:
-            if not self.ProcessingFunc( stream ):
-                self.done = True
+            self.done = not self.ProcessingFunc( stream )
         # Print out some progress reports
         self.processedcount += 1
         # if (self.processedcount % 10 == 0):
