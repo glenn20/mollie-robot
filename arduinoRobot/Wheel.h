@@ -7,7 +7,7 @@
 
 #include "Encoder.h"
 #include "Motor.h"
-#include "PID.h"
+#include "PID2.h"
 
 // A "Wheel" is built from a DC motor controller ("Motor") and an "Encoder"
 class Wheel {
@@ -15,30 +15,35 @@ public:
     Wheel(
 	Motor&      motor,
 	Encoder&    encoder,
-	String      name = "Wheel",
-	bool        usepid = true
+	String      name = "Wheel"
 	);
 
     void     initialise();
     void     enable();                  // Enable the wheel motor
     void     disable();                 // Disable the wheel motor
-    int      setspeed( int speed );     // Set the target speed (in RPM)
-    int      setspeed();                // Return the target speed
-    int      speed();                   // Return the actual wheel speed
-    int      power();                   // Return the motor power setting
-    void     run( int speed ) { setspeed( speed ); };
+    float    setspeed( float speed );   // Set the target speed (in RPM)
+    float    setspeed();                // Return the target speed
+    float    speed();                   // Return the actual wheel speed
+    int      setpower( int power );	// Set the motor power
+    float    power();                   // Return the motor power setting
+    void     stop();                    // Stop the wheel
+    void     run( float speed ) { setspeed( speed ); };
 
     bool     Loop();                    // Called to update PID control
 
     Motor&   motor()   { return m_motor;   };
     Encoder& encoder() { return m_encoder; };
+    
+private:
+    int       updatePid( int power, float targetValue, float currentValue);
+
 private:
     Motor&   m_motor;                   // The Motor controller
     Encoder& m_encoder;                 // The Encoder controller
     String   m_name;                    // A name for diagnostic printouts
-    bool     m_usepid;
-    MyPID    pid;                       // The PID controller
-    int      m_speed;                   // The target speed for the wheel
+    MyPID2   pid;                       // The PID controller
+    float    m_setspeed;                // The target speed for the wheel
+    bool     m_setspeedp;		// Manage for constant speed?
     unsigned long m_tick;               // An internal loop counter
 };
 
