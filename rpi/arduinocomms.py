@@ -2,9 +2,39 @@
 Arduino communications interface - over I2C bus.
 """
 
+from __future__ import print_function
+import serial
+import json
+import threading
+
 import smbus
 import time
 import io
+
+class SerialMonitor( threading.Thread ):
+    """
+    A class to monitor the serial port in a thread
+    """
+    def __init__( self, device="/dev/ttyS99" ):
+        super( SerialMonitor, self ).__init__()
+        self.device = device
+        self.port   = serial.Serial( self.device, baudrate=115200, timeout=None )
+        self.done   = False
+        s = ""
+        while not s == "Robot ready\r\n":
+            s = self.port.readline()
+            print ( "Arduino:", s )
+        self.start()
+
+    def run( self ):
+        while not self.done:
+            s = self.port.readline()
+            try:
+                d = json.loads( s )
+                print( "Robot=", d, end="\r\n" )
+            except ValueError, msg:
+                print( msg, s, end="\r\n" )
+
 
 class ArduinoComms():
     """
@@ -30,6 +60,7 @@ class ArduinoComms():
         # The I2C address of the arduino - setup in the arduinoRobot Program
         self.address = I2Caddress
         self.dummy   = dummy
+        self.serialmonitor = SerialMonitor()
         self.bus     = smbus.SMBus( self.busnum ) if not dummy else None
 
     # Write one character to the I2C bus
