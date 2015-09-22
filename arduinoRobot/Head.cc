@@ -42,10 +42,6 @@ float HeadServo::setangle( float angle )
     if (m_servopin > 0) {
 	m_servo.write( servoangle );
     }
-    Serial.print( "MyServo::setangle[pin=" );
-    Serial.print( m_servopin );
-    Serial.print( "] = " );
-    Serial.println( servoangle );
   
     return m_angle;
 }
