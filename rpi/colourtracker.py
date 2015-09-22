@@ -15,10 +15,10 @@ class ColourTracker():
                              if hsv_slice is not None
                              else self.__class__.HSV_all)
         self.use_contours = use_contours
-        self.show_images  = show_images
+        self.show_images  = show_images or tune_hsv
         self.tune_hsv     = tune_hsv
-        cv2.namedWindow( "output", 1 )
         if self.show_images:
+            cv2.namedWindow( "output", 1 )
             cv2.namedWindow( "processed", 1 )
         if self.tune_hsv:
             self.SetupHSVTuning()
@@ -139,7 +139,7 @@ class ColourTracker():
         cv2.setTrackbarPos( "V_MIN", windowname, self.HSV_slice[0][2] )
         cv2.setTrackbarPos( "V_MAX", windowname, self.HSV_slice[1][2] )
 
-    def close():
+    def close( self ):
         # If we were adjusting HSV slice values, print them out
         if self.tune_hsv:
             print( "HSV_min = %03d %03d %03d"
@@ -152,4 +152,5 @@ class ColourTracker():
                       self.HSV_slice[1][2]) )
 
         # Wind up and shutdown
+        print( "Closing down windows..." )
         cv2.destroyAllWindows()
