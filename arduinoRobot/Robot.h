@@ -3,6 +3,8 @@
 #ifndef ROBOT_H
 #define ROBOT_H
 
+#include <ArduinoJson.h>
+
 #include "Wheel.h"
 #include "Head.h"
 
@@ -29,6 +31,8 @@ public:
 
     bool     Loop();
 
+    void     sendjson();
+
     Wheel&   leftwheel()  { return m_leftwheel;  };
     Wheel&   rightwheel() { return m_rightwheel; };
     Head&    head()       { return m_head;       };
@@ -40,6 +44,7 @@ private:
     int      m_rightspeed;
     int      m_speed;
     int      m_direction;
+    unsigned long m_tick;               // An internal loop counter
 };
 
 

@@ -2,6 +2,9 @@
 
 #include "Robot.h"
 
+#include <ArduinoJson.h>
+
+
 Robot::Robot( Wheel&       leftwheel,
 	      Wheel&       rightwheel,
 	      Head&        head
@@ -12,7 +15,8 @@ Robot::Robot( Wheel&       leftwheel,
 	      m_leftspeed  ( 0 ),
 	      m_rightspeed ( 0 ),
 	      m_speed      ( 0 ),
-	      m_direction  ( 0 ) 
+	      m_direction  ( 0 ),
+	      m_tick       ( 0 )
 {
 }
 
@@ -118,7 +122,38 @@ bool Robot::Loop()
     m_leftwheel.Loop();
     m_rightwheel.Loop();
 
+    m_tick++;
+    if (m_tick > 2000) {
+	m_tick = 0;
+	sendjson();
+    }
+
     return true;
+}
+
+void Robot::sendjson()
+{
+    //Serial.println( "JSON" );
+    //return;
+    // The internal buffer for the Json objects
+    StaticJsonBuffer<200> jsonBuffer;
+
+    JsonObject& root = jsonBuffer.createObject();
+
+    root["time"]     = millis();
+    root["headX"]    .set( m_head.angleX() );
+    root["headY"]    .set( m_head.angleY() );
+    root["setspeedL"].set( m_leftwheel .setspeed() );
+    root["setspeedR"].set( m_rightwheel.setspeed() );
+    root["speedL"]   .set( m_leftwheel .speed() );
+    root["speedR"]   .set( m_rightwheel.speed() );
+    root["powerL"]   = m_leftwheel .power();
+    root["powerR"]   = m_rightwheel.power();
+    root["countsL"]  = m_leftwheel .encoder().count();
+    root["countsR"]  = m_rightwheel.encoder().count();
+
+    root.printTo( Serial );
+    Serial.println();
 }
 
 // Local Variables:
