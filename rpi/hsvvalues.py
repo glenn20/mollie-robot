@@ -12,6 +12,10 @@ hsvvalues = {
     "redball"   : [
         np.array( [   0, 223,  60 ], np.uint8 ),
         np.array( [   9, 255, 255 ], np.uint8 )
+        ],
+    "bluething" : [
+        np.array( [  89,  63,  60 ], np.uint8 ),
+        np.array( [ 108, 255, 255 ], np.uint8 )
         ]
     }
 
