@@ -5,6 +5,8 @@
 
 void SetupComms( int i2c_slave_address );
 char *ReadCommand();
+void SetupComms_serial( );
+char *ReadCommand_serial();
 
 #endif //COMMS_H
 

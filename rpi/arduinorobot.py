@@ -204,4 +204,4 @@ class ArduinoRobot():
         Shutdown/close the robot.
         """
         print( "Closing down the robot..." )
-        self.arduinocomms.serialmonitor.done = True
+        self.arduino.close()

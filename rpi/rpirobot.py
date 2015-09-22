@@ -45,9 +45,9 @@ import hsvvalues
 # I2Cbusnumber = 0 if RPI_version=1 else 1 if RPI_version=2
 # I2Caddress of the arduino board - as set in arduinoRobot program
 robot = arduinorobot.ArduinoRobot(
-    arduinocomms.ArduinoComms( 
-        I2Cbusnumber = 1,    
-        I2Caddress   = 0x04,
+    arduinocomms.ArduinoComms(
+        device       = "/dev/ttyS99",
+        baudrate     = 115200,
         dummy        = args.norobot
         )
     )

@@ -163,7 +163,7 @@ void SetupRobot()
 void LoopRobot()
 {
     // If a command is available - process it...
-    char *s = ReadCommand();
+    char *s = ReadCommand_serial();
     if (s != NULL) {
 	RobotCommand( s );
     }

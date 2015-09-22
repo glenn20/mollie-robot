@@ -35,6 +35,25 @@ char* ReadCommandLine()
     return NULL;
 }
 
+char* ReadCommand_serial()
+{
+    char c;
+    // While there are more characters to be read from the port
+    while (Serial.available()) {
+	c = Serial.read();          // Read the next character
+	if (c != '\n') {            // If this is not the end of the line...
+	    *nextchar++ = c;        // Add the next character to the string
+	    *nextchar = '\0';       // Terminate the string
+	} else {                    // If this is the end of the line...
+	    *nextchar = '\0';       // Terminate the string
+	    nextchar = commandline; // Reset nextchar back to the start
+	    commandavailable = true;
+	    return commandline;     // Return the commandline
+	}
+    }
+    return NULL;
+}
+
 // status =  0 if command in progress
 // status =  1 if command completed successfully
 // status =  2 if command error
@@ -79,6 +98,11 @@ void SetupComms( int i2c_slave_address )
     Wire.onReceive( receiveData );   // Receive commands from RPI
     Wire.onRequest( sendData );      // Send data when asked
 }
+
+void SetupComms_serial( )
+{
+}
+
 
 // Local Variables:
 // c-basic-offset: 4
