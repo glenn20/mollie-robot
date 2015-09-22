@@ -117,7 +117,7 @@ class ArduinoRobot():
             y: Vertical angle of the object to track.
         """
         return self.send( "track %d %d"
-                          % (x, y) ) 
+                          % (x, y) )
 
     def TrackObject( self, posX, posY, area ):
         """
@@ -131,6 +131,9 @@ class ArduinoRobot():
             area: The area of the identified object.
         """
         # If the image is big enough - track it!!!
+        posX *= 20.0 / 115.0    # Calibrate - convert camera pixels to degrees
+        posY *= 20.0 / 115.0
+        # print( "track %d %d\r\n" % (posX, posY) )
         if area > 50:
             if self.trackingOn == True:
                 # Tell the robot to look here
@@ -148,7 +151,7 @@ class ArduinoRobot():
         Arguments:
             c: The remote control key.
         """
-        print( ">>  %s" % (c) )
+        # print( ">>  %s" % (c) )
         if c == "q":
             # Quit the program
             self.Run( 0, 0 )
@@ -176,10 +179,10 @@ class ArduinoRobot():
         elif c == "s":
             # Look straight ahead
             return self.Look( 0.0, 0.0 )	
-        elif c == "R":
+        elif c == "R" or c == "g":
             # Up key - Increase robot speed
             return self.Run( self.speed + 2, self.direction )
-        elif c == "T":
+        elif c == "T" or c == "b":
             # Down key - Decrease robot speed
             return self.Run( self.speed - 2, self.direction )
         elif c == "f":
@@ -196,8 +199,9 @@ class ArduinoRobot():
             return self.Run( self.speed, self.direction - 0.02 )
         return True
 
-    def close():
+    def close( self ):
         """
         Shutdown/close the robot.
         """
-        pass
+        print( "Closing down the robot..." )
+        self.arduinocomms.serialmonitor.done = True
