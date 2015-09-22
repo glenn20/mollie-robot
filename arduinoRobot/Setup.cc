@@ -121,15 +121,18 @@ void rightEncoderISR() {robbie.rightwheel().encoder().update();}
 
 // --- Init PID Controller ---
 double posX = 0.0;
+double posY = 0.0;
 
 //Define Variables we'll be connecting to
 double SetpointX, InputX, OutputX;
+double SetpointY, InputY, OutputY;
 double Setpointbody, Inputbody, Outputbody;
 
 //Specify the links and initial tuning parameters
 // face tracking: 0.8, 0.6, 0
 // color tracking: 0.4, 0.4, 0
-PID myPIDX(&InputX, &OutputX, &SetpointX, 0.1, 0.0, 0.0, DIRECT);
+PID myPIDX(&InputX, &OutputX, &SetpointX, 0.2, 0.0, 0.0, DIRECT);
+PID myPIDY(&InputY, &OutputY, &SetpointY, 0.2, 0.0, 0.0, DIRECT);
 PID myPIDbody(&Inputbody, &Outputbody, &Setpointbody, 5.0, 0.0, 0.0, DIRECT);
 
 void SetupRobot()
@@ -142,14 +145,18 @@ void SetupRobot()
     robbie.initialise();
     robbie.enable();
     delay(1);
+    Serial.println( "Robot ready" );
 
     // --- Setup PID ---
     SetpointX = 0;
+    SetpointY = 0;
     Setpointbody = 0;
     myPIDX.SetOutputLimits(-90, 90);
+    myPIDY.SetOutputLimits(-90, 90);
     myPIDbody.SetOutputLimits(-100, 100);
     //turn PIDs on
     myPIDX.SetMode(AUTOMATIC);
+    myPIDY.SetMode(AUTOMATIC);
     myPIDbody.SetMode(AUTOMATIC);
 }
 
@@ -212,29 +219,37 @@ bool RobotCommand( char* line )
 	// set servo angle
 	// servo 0-180
 	InputX = numbers[0];
-	//InputY = numbers[1];
+	InputY = numbers[1];
 	myPIDX.Compute();
-	if (-5.0 < OutputX && OutputX < 5.0) {
+	myPIDY.Compute();
+	if (-2.0 < InputX && InputX < 2.0) {
 	    // Accept small angles
-	    return false;
+	    OutputX = 0;
+	}
+	if (-2.0 < InputY && InputY < 2.0) {
+	    // Accept small angles
+	    OutputY = 0;
 	}
 	// Update Servo Position
+	//posX = robbie.head().angleX();
+	//posY = robbie.head().angleY();
 	posX = constrain(posX + OutputX, -90, 90);
+	posY = constrain(posY - OutputY, -90, 90);
 	//Serial.print( "Camera direction: " );
 	//Serial.println( posX );
-	robbie.look( posX );
+	robbie.look( posX, posY );
     
 	// Now, turn the body toward where the camera is looking
-	Inputbody = posX;
-	myPIDbody.Compute();
+	//Inputbody = posX;
+	//myPIDbody.Compute();
     
-	if (-5.0 < Outputbody && Outputbody < 5.0) {
-	    return true;
-	}
-	int direction = constrain( Outputbody, -100, 100 );
+	//if (-5.0 < Outputbody && Outputbody < 5.0) {
+	//    return true;
+	//}
+	//int direction = constrain( Outputbody, -100, 100 );
 	//Serial.print( "Robot direction: " );
 	//Serial.println( direction );
-	robbie.run( robbie.speed(), direction );
+	//robbie.run( robbie.speed(), direction );
     }
     return true;
 }
