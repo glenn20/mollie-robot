@@ -40,14 +40,14 @@ void rightEncoderISR();
 
 // Start assembling Robbie the robot from the ground up...
 Encoder leftencoder (		// Left wheel encoder
-    3,				//   Arduino input pin for the encoder signal
-    1,				//   Arduino interrupt number to generate
+    2,				//   Arduino input pin for the encoder signal
+    0,				//   Arduino interrupt number to generate
     leftEncoderISR		//   Interrupt service routine for this encoder
     );
 
 Encoder rightencoder(		// Right wheel encoder
-    2,				//   Arduino input pin for the encoder signal
-    0,				//   Arduino interrupt number to generate
+    3,				//   Arduino input pin for the encoder signal
+    1,				//   Arduino interrupt number to generate
     rightEncoderISR		//   Interrupt service routine for this encoder
     );
 

@@ -16,6 +16,8 @@ class SerialMonitor( threading.Thread ):
         self.device = device
         self.port   = serial.Serial( self.device, baudrate=baudrate, timeout=None )
         self.done   = False
+        # Opening the serial port resets the Arduino
+        # - wait till it is ready
         s = ""
         while not s == "Robot ready\r\n":
             s = self.port.readline()
@@ -28,7 +30,7 @@ class SerialMonitor( threading.Thread ):
             try:
                 d = json.loads( s )
                 print( "Robot=", d, end="\r\n" )
-            except ValueError, msg:
+            except ValueError as msg:
                 print( msg, s, end="\r\n" )
 
 
@@ -50,7 +52,7 @@ class ArduinoComms():
         
         """
         self.dummy   = dummy
-        self.serialmonitor = SerialMonitor(device, baudrate )
+        self.serialmonitor = SerialMonitor( device, baudrate )
 
     # Write a command to the Arduino over serial
     def send( self, command ):
