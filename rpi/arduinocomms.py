@@ -29,7 +29,7 @@ class SerialMonitor( threading.Thread ):
             s = self.port.readline()
             try:
                 d = json.loads( s )
-                print( "Robot=", d, end="\r\n" )
+                # print( "Robot=", d, end="\r\n" )
             except ValueError as msg:
                 print( msg, s, end="\r\n" )
 
