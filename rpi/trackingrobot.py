@@ -49,6 +49,7 @@ class TrackingRobot( threading.Thread ):
         super( TrackingRobot, self ).__init__()
         self.robot           = robot
         self.tracker         = tracker
+        self.manager         = None
         self.resolution      = (resolution if resolution is not None
                                 else self.defaultresolution)
         self.numberofthreads = (numberofthreads if numberofthreads is not None
@@ -83,8 +84,11 @@ class TrackingRobot( threading.Thread ):
         posX, posY, area = self.tracker.Track( stream )
         # Send the coordinates to the robot
         self.robot.TrackObject( posX, posY, area )
+        # print( "(%d, %d, %d)\r\n" % (posX, posY, area) )
         # Process any pending key presses
-        return (not self.done) and self._handlekeypresses()
+        if (self.done):
+            return False
+        return self._handlekeypresses()
 
     # Setup the camera and run the image capture process
     def run( self ):
@@ -113,9 +117,10 @@ class TrackingRobot( threading.Thread ):
             with imageprocessor.ProcessorManager(
                 numberofthreads       = self.numberofthreads,
                 processingfunction    = self.doObjectTracking
-                ) as processor:
+                ) as manager:
+                self.manager = manager
                 # Start the PiCamera capture_sequence
-                camera.capture_sequence( processor.streamgenerator(),
+                camera.capture_sequence( manager.streamgenerator(),
                                          use_video_port=True )
 
     def loop( self ):
@@ -128,7 +133,7 @@ class TrackingRobot( threading.Thread ):
             tty.setraw( sys.stdin.fileno() )
             while not self.done:
                 print( ">>", end=" " )
-                c = sys.stdin.read(1)
+                c = sys.stdin.read( 1 )
                 print( c, end="\r\n" )
                 if self.robot.RemoteControl( c ) is None:
                     self.done = True
@@ -145,9 +150,9 @@ class TrackingRobot( threading.Thread ):
         self.tracker.close()
         self.robot.close()
         while threading.active_count() > 1:
-            for t in threading.enumerate():
-                print( t )
-            print( '' )
+            # for t in threading.enumerate():
+            #     print( t )
+            # print( '' )
             time.sleep( 0.5 )
 
 # Local Variables:
