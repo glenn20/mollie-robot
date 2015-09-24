@@ -30,7 +30,7 @@ parser.add_argument(
     help="Eliminate the contour finding part of the object tracking"
     )
 parser.add_argument(
-    "--threads", type=int, default=4, choices=[2,3,4,5,6,7,8],
+    "--threads", type=int, default=2, choices=[1,2,3,4,5,6,7,8],
     help="Number of threads to use for the image processing"
     )
 args = parser.parse_args()
