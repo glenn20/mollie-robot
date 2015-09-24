@@ -1,6 +1,32 @@
 import io
 import time
 import threading
+import Queue
+
+# Each ImageProcessor has a stream for capturing images from the camera
+# and has a thread for processing it in the run() method.
+class Image():
+    """
+    Multi-threaded processing of images.
+
+    This is a helper class for the ProcessorManager class
+
+    Methods:
+    __init__( manager ): Make a processing thread with link back to the manager
+    run() : Run an image processing function over images as they are acquired
+    """
+    def __init__( self ):
+        """
+        Construct an Image processing thread with a link back to the Manager
+
+        Args:
+            processormanager (ProcessorManager)
+        """
+        self.stream   = io.BytesIO()
+        self.img      = None
+        self.contours = None
+        self.time     = None
+
 
 # Each ImageProcessor has a stream for capturing images from the camera
 # and has a thread for processing it in the run() method.
@@ -23,9 +49,6 @@ class ImageProcessor( threading.Thread ):
         """
         super( ImageProcessor, self ).__init__()
         self.manager     = manager
-        self.stream      = io.BytesIO()
-        self.event       = threading.Event()
-        self.terminated  = False
         self.start()   # Run the "run()" method in a new thread
 
     def run( self ):
@@ -33,20 +56,23 @@ class ImageProcessor( threading.Thread ):
         Execute the image processing function on the stream buffer.
         """
         # This method runs in a separate thread
-        while not self.terminated:
-            # Wait for an image to be written to the stream
-            if self.event.wait(1):
-                try:
-                    self.stream.seek(0)
-                    # Do the image processing
-                    self.manager.doImageProcessing( self.stream )
-                finally:
-                    # Reset the stream and event
-                    self.stream.seek(0)
-                    self.stream.truncate()
-                    self.event.clear()
-                    # Return ourselves to the pool
-                    self.manager.returntopool( self )
+        while True:
+            # Wait for an image to appear on the processing queue
+            image = self.manager.processingqueue.get()
+            # If this is a sentinel - put it back on the queue and end thread.
+            if (image is self.manager.sentinel):
+                self.manager.processingqueue.put( self.manager.sentinel )
+                break
+            try:
+                image.stream.seek(0)
+                # Do the image processing
+                self.manager.doImageProcessing( image.stream )
+            finally:
+                # Reset the stream and event
+                image.stream.seek(0)
+                image.stream.truncate()
+                # Put the image back on the camera queue
+                self.manager.cameraqueue.put( image )
 
 # We will build a pool of Imageprocessors
 class ProcessorManager():
@@ -64,8 +90,12 @@ class ProcessorManager():
     doImageProcessing(stream): Execute image processing function on the stream
     returntopool(processor)  : Return this thread to the active queue
     """
+
+    # used to signal threads to stop processing
+    sentinel = object()
+
     def __init__( self,
-                  numberofthreads    = 4,
+                  numberofthreads    = 2,
                   processingfunction = None ):
         """
         Construct a Manager for multi-threaded image capture and processing.
@@ -84,22 +114,23 @@ class ProcessorManager():
         self.processedcount = 0                # Number of processed images
         self.start          = time.time()      # Time we started capture
         self.finish         = time.time()      # Time we finished processing
-        if (numberofthreads < 2):
-            numberofthreads = 2
+        # Build the pool of Image objects
+        if (numberofthreads < 1):
+            numberofthreads = 1
         elif (numberofthreads > 10):
             numberofthreads = 10
-        # Build the pool of Image processing threads
-        self.pool = [ImageProcessor( self ) for i in range(numberofthreads)]
+        # Create the queues for the "Image"s first
+        self.cameraqueue = Queue.Queue()
+        self.processingqueue = Queue.Queue()
+        # Then build the pool of Image images
+        self.imagepool = [Image() for i in range( 2 * numberofthreads )]
+        # Fill the camera queue with Image records - ready for capture
+        for i in self.imagepool:
+            self.cameraqueue.put( i )
+        # Create the pool of image processing threads
+        self.processingpool = [ImageProcessor( self )
+                               for i in range(numberofthreads)]
 
-    def returntopool( self, processor ):
-        """
-        Put a thread back into the pool of available processing threads.
-
-        Args:
-            processor (ImageProcessor): an image processing thread object 
-        """
-        with self.lock:
-            self.pool.append( processor )
 
     def doImageProcessing( self, stream ):
         """
@@ -112,8 +143,8 @@ class ProcessorManager():
         """
         if self.ProcessingFunc is not None:
             self.done = not self.ProcessingFunc( stream )
-        # Print out some progress reports
         self.processedcount += 1
+        # Print out some progress reports
         # if (self.processedcount % 10 == 0):
         #     print( "Processed %4d" % (self.processedcount) )
 
@@ -134,47 +165,47 @@ class ProcessorManager():
         # Yield the ImageProcessor's stream to the picamera capture-sequence
         # Then wake up the ImageProcessor's thread to start processing
         while not self.done:
-            with self.lock:
-                processor = (self.pool.pop() if self.pool
-                             else None)
-            if processor:
-                processor.time = time.time() # Record the time for the capture
-                yield processor.stream
-                # When the camera asks for the next stream wake up the thread
-                # owning this Processor
-                processor.event.set()
+            try:
+                # Get the next Image buffer from the camera queue
+                image = self.cameraqueue.get( timeout=0.1 )
+            except Queue.Empty:
+                continue
+            if image:
+                image.time = time.time() # Record the time for the capture
+                yield image.stream
+                # Resumes when camera asks for next buffer for Image capture
+                # Put the just captured Image on the processing queue
+                self.processingqueue.put( image )
                 self.capturecount += 1
                 # Print out some progress reports
                 # if self.capturecount % 10 == 0:
                 #   print( "Capture %03d" % (self.capturecount) )
-            else:
-                # When the pool is starved, wait a while for it to refill
-                time.sleep(0.1)
+        # Add the sentinel to the processing queue..
+        # ...tells the processing threads to shutdown
+        self.processingqueue.put( self.sentinel )
 
     def report( self ):
         """
         Print a summary of the image processing statistics.
         """
-        print( 'Captured %d images in %d seconds at %.2ffps'
+        print( "\r\n" )
+        print( 'Captured %d images in %d seconds at %.2ffps\r\n'
                % (self.capturecount,
                   self.finish-self.start,
                   self.capturecount/(self.finish-self.start) ) )
-        print( 'Processed %d images in %d seconds at %.2ffps'
+        print( 'Processed %d images in %d seconds at %.2ffps\r\n'
                % (self.processedcount,
                   self.finish-self.start,
                   self.processedcount/(self.finish-self.start) ) )
 
-    # Cleanup all the 
+    # Cleanup up all the 
     def close( self ):
         """
         Close down the image processing.
         """
         self.finish = time.time()
-        while self.pool:
-            with self.lock:
-                processor = self.pool.pop()
-                processor.terminated = True
-                processor.join()
+        for processor in self.processingpool:
+            processor.join()
         self.report()
 
     # So we can use this class as a ContextManager
