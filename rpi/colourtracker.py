@@ -19,7 +19,6 @@ class ColourTracker():
         self.tune_hsv     = tune_hsv
         if self.show_images:
             cv2.namedWindow( "output", 1 )
-            cv2.namedWindow( "processed", 1 )
         if self.tune_hsv:
             self.SetupHSVTuning()
 
@@ -67,10 +66,6 @@ class ColourTracker():
 
         # Generate the thresholded image to identify 
         imgFiltered = self._ColorThreshold( img )
-
-        if self.show_images:
-            # Display threshold image now - contouring degrades the image
-            cv2.imshow( "processed", imgFiltered )
 
         # Calculate moments from the largest contour, or the threshold image
         moments = self._getMoments( imgFiltered, img )
