@@ -25,7 +25,10 @@ class Image():
         self.stream   = io.BytesIO()
         self.img      = None
         self.contours = None
+        self.bestcountour = None
         self.time     = None
+        self.location = (None, None)
+        self.track    = (None, None, None)
 
 
 # Each ImageProcessor has a stream for capturing images from the camera
@@ -66,7 +69,7 @@ class ImageProcessor( threading.Thread ):
             try:
                 image.stream.seek(0)
                 # Do the image processing
-                self.manager.doImageProcessing( image.stream )
+                self.manager.doImageProcessing( image )
             finally:
                 # Reset the stream and event
                 image.stream.seek(0)
@@ -132,7 +135,7 @@ class ProcessorManager():
                                for i in range(numberofthreads)]
 
 
-    def doImageProcessing( self, stream ):
+    def doImageProcessing( self, image ):
         """
         Execute the provided image processing function over the stream.
 
@@ -142,7 +145,7 @@ class ProcessorManager():
             stream (BytesIO): The stream containing the captured image data
         """
         if self.ProcessingFunc is not None:
-            self.done = not self.ProcessingFunc( stream )
+            self.done = not self.ProcessingFunc( image )
         self.processedcount += 1
         # Print out some progress reports
         # if (self.processedcount % 10 == 0):

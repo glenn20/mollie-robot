@@ -33,63 +33,73 @@ class ColourTracker():
             None, iterations=8 )
 
     # Calculate moments from the largest contour of the thresholded image
-    def _getMoments( self, imgFiltered, img ):
+    def _getMoments( self, imgFiltered, image ):
         # If use_contours is "off": calculate moments from threshold image
         if not self.use_contours:
             return cv2.moments( imgFiltered, 0 )
 
-        contours, _ = cv2.findContours( imgFiltered,
-                                        cv2.RETR_EXTERNAL,
-                                        cv2.CHAIN_APPROX_SIMPLE )
-        if not contours or len(contours) > 20:
-            return None
+        image.contours, _ = cv2.findContours( imgFiltered,
+                                              cv2.RETR_EXTERNAL,
+                                              cv2.CHAIN_APPROX_SIMPLE )
+        if not image.contours:
+            return False
         # Get the contour with maximum area
-        bestcontour = max( contours, key=lambda c: cv2.contourArea( c ) )
-        moments = cv2.moments( bestcontour, 0 )
-        if self.show_images:
+        image.bestcontour = max( image.contours, key=lambda c: cv2.contourArea( c ) )
+        return cv2.moments( image.bestcontour, 0 )
+
+    def Showimage( self, image ):
+        if image.moments is not None:
             # Draw all the contours in red
-            cv2.drawContours( img, contours,     -1, (0,0,255), 2 )
+            cv2.drawContours( image.img, image.contours,     -1, (0,0,255), 2 )
             # Draw the max contour in blue
-            cv2.drawContours( img, [bestcontour], 0, (255,0,0), 2 )
-        return moments
+            cv2.drawContours( image.img, [image.bestcontour], 0, (255,0,0), 2 )
+
+        if image.location[0] is not None:
+            # Draw a circle around the tracking point
+            cv2.circle( image.img, image.location, 20, (0,255,0), 2 );
+
+        # update display windows
+        cv2.imshow( "output", image.img )
+        return
 
     # Read an image from the stream
     # Return the coordinates and area of the object (posx, posy, area)
     # The centre of the image is at (posx, posy) = (0, 0)
-    def Track( self, stream ):
+    def Track( self, image ):
         # "Decode" the image from the array, preserving colour
-        data = np.fromstring( stream.getvalue(), dtype=np.uint8 )
-        img  = cv2.imdecode( data, 1 )
+        image.img = cv2.imdecode( np.fromstring( image.stream.getvalue(),
+                                                 dtype=np.uint8 ), 1 )
         
         # Camera applies gaussian blur - no need to do it again.
-        # img = cv2.smooth( img, cv2.BLUR, 3 )
+        # image.img = cv2.smooth( image.img, cv2.BLUR, 3 )
 
         # Generate the thresholded image to identify 
-        imgFiltered = self._ColorThreshold( img )
+        imgFiltered = self._ColorThreshold( image.img )
 
         # Calculate moments from the largest contour, or the threshold image
-        moments = self._getMoments( imgFiltered, img )
+        image.moments = self._getMoments( imgFiltered, image )
+        if not image.moments:
+            return False
 
-        area = 0
-        if moments is not None:
-            area = moments['m00']
-        posX = 0 ; posY = 0
-        if(area > 0):
-            # Calculating the center position of the object
-            posX = int(moments['m10'] / area)
-            posY = int(moments['m01'] / area)
-            if self.show_images:
-                cv2.circle( img, (posX, posY), 20, (0,255,0), 2 );
-            # Convert coords so (0,0) is at centre of image and Y is upward
-            posX =   posX - img.shape[1]/2
-            posY = -(posY - img.shape[0]/2)
+        area = image.moments['m00']
+        if (area < 1):
+            return False
 
-        # update video windows
+        image.location = (None,None)
+        image.track    = (None,None,None)
+        # Calculate the centre of gravity of the largest "blob" of colour we found
+        image.location = (int(image.moments['m10'] / area),
+                          int(image.moments['m01'] / area))
+        # Convert coords so (0,0) is at centre of image and Y is upward
+        image.track = (+(image.location[0] - image.img.shape[1]/2),
+                       -(image.location[1] - image.img.shape[0]/2),
+                       area)
+
         if self.show_images:
-            cv2.imshow( "output", img )
+            self.Showimage( image )
 
         # Return the coords of the object and it's area
-        return (posX, posY, area)
+        return True
 
     def SetHSVSlice( self, hsv_slice ):
         if hsv_slice is not None:

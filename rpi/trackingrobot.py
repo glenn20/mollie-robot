@@ -71,7 +71,7 @@ class TrackingRobot( threading.Thread ):
     # Process each image to identify location of object
     # Send the location of the object to the arduino
     # Process any key presses as remotecontrol for the robot
-    def doObjectTracking( self, stream ):
+    def doObjectTracking( self, image ):
         """
         Process captured images and locate object for tracking.
 
@@ -81,9 +81,9 @@ class TrackingRobot( threading.Thread ):
             Return False if we detect a shutdown request
         """
         # Get the position of the object being tracked
-        posX, posY, area = self.tracker.Track( stream )
-        # Send the coordinates to the robot
-        self.robot.TrackObject( posX, posY, area )
+        if self.tracker.Track( image ):
+            # Send the coordinates to the robot - if we found our target
+            self.robot.TrackObject( *image.track )
         # print( "(%d, %d, %d)\r\n" % (posX, posY, area) )
         # Process any pending key presses
         if (self.done):
