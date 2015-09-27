@@ -35,6 +35,8 @@ parser.add_argument(
     )
 args = parser.parse_args()
 
+import picamera
+
 import arduinorobot
 import arduinocomms
 import colourtracker
@@ -52,9 +54,6 @@ robot = arduinorobot.ArduinoRobot(
         )
     )
 
-# Connect to and initialise the arduino robot
-robot.Initialise()
-
 # Create a ColourTracker instance to track objects
 tracker = colourtracker.ColourTracker(
     hsv_slice        = hsvvalues.hsvvalues["bluething"],
@@ -63,13 +62,26 @@ tracker = colourtracker.ColourTracker(
     tune_hsv         = args.tunehsv
     )
 
+resolution = (320, 240)
+camera = picamera.PiCamera()
+camera.preview_fullscreen = False
+camera.preview_window     = (100, 100, resolution[0], resolution[1])
+camera.resolution         = resolution
+camera.framerate          = 10
+# camera.exposure_mode    = 'off'
+camera.iso                = 800
+camera.image_effect       = 'blur'
+camera.awb_mode           = 'off' # 'fluorescent'
+camera.awb_gains          = (1.2,1.2)
+
+# Connect to and initialise the arduino robot
+robot.Initialise()
+
 # Assemble our combined TrackingRobot from a robot and a tracker
 trackingrobot = trackingrobot.TrackingRobot(
     robot            = robot,
     tracker          = tracker,
-    resolution       = (320, 240),
-    numberofthreads  = args.threads,
-    showpreview      = args.preview
+    camera           = camera
     )
 
 # Now turn on the robot which will:
