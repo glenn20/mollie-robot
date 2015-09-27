@@ -157,5 +157,6 @@ class ColourTracker():
                       self.HSV_slice[1][2]) )
 
         # Wind up and shutdown
-        print( "Closing down windows..." )
-        cv2.destroyAllWindows()
+        if self.show_images:
+            print( "Closing down windows..." )
+            cv2.destroyAllWindows()
