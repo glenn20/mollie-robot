@@ -20,23 +20,19 @@ import picamera
 import arduinocomms
 import arduinorobot
 import colourtracker
-import imageprocessor
+import imagecapture
 
-class TrackingRobot( threading.Thread ):
+import workflow
+
+class TrackingRobot():
     """
     Create an object tracker and remote control for an arduino robot.
 
     Methods:
-    __init__() : Construct a robot from a robot controller and an object tracking module.
+    __init__() : Construct from a robot controller an object tracking module and a camera.
     run() : 
     """
-    defaultresolution      = ( 320, 240 )
-    defaultnumberofthreads = 4
-
-    def __init__( self, robot, tracker,
-                  resolution      = None,
-                  numberofthreads = None,
-                  showpreview     = False ):
+    def __init__( self, robot, tracker, picamera ):
         """
         Construct a robot which tracks objects using the RPI camera.
 
@@ -46,17 +42,16 @@ class TrackingRobot( threading.Thread ):
             resolution (x,y): Resolution for image capture (RPI camera)
             numberofthreads: Number of threads for image processing
         """
-        super( TrackingRobot, self ).__init__()
         self.robot           = robot
         self.tracker         = tracker
-        self.manager         = None
-        self.resolution      = (resolution if resolution is not None
-                                else self.defaultresolution)
-        self.numberofthreads = (numberofthreads if numberofthreads is not None
-                                else self.defaultnumberofthreads)
-        self.showpreview     = showpreview
+        self.camera          = camera
+
         self.done            = False
-        self.start()    # Run the "run()" method in a new thread
+        self.cameraqueue     = Queue.Queue()
+        self.processingqueue = Queue.Queue()
+        self.displayqueue    = Queue.Queue()
+        self.workflow        = None
+        self.capture         = None
 
     # Process any pending key presses in the opencv window
     # Process these as remote controls for the robot
@@ -71,7 +66,7 @@ class TrackingRobot( threading.Thread ):
     # Process each image to identify location of object
     # Send the location of the object to the arduino
     # Process any key presses as remotecontrol for the robot
-    def doObjectTracking( self, image ):
+    def imagetracking( self, image ):
         """
         Process captured images and locate object for tracking.
 
@@ -80,6 +75,8 @@ class TrackingRobot( threading.Thread ):
         Returns:
             Return False if we detect a shutdown request
         """
+        if image is None:
+            return None
         # Get the position of the object being tracked
         if self.tracker.Track( image ):
             # Send the coordinates to the robot - if we found our target
@@ -87,8 +84,8 @@ class TrackingRobot( threading.Thread ):
         # print( "(%d, %d, %d)\r\n" % (posX, posY, area) )
         # Process any pending key presses
         if (self.done):
-            return False
-        return self._handlekeypresses()
+            return None
+        return image if self._handlekeypresses() else None
 
     # Setup the camera and run the image capture process
     def run( self ):
@@ -98,30 +95,19 @@ class TrackingRobot( threading.Thread ):
         Setups up and executes the
         multi-threaded image capture and processing.
         """
-        with picamera.PiCamera() as camera:
-            camera.preview_fullscreen = False
-            camera.preview_window     = (100, 100,
-                                         self.resolution[0],
-                                         self.resolution[1] )
-            camera.resolution         = self.resolution
-            camera.framerate          = 10
-            # camera.exposure_mode    = 'off'
-            camera.ISO                = 800
-            camera.image_effect       = 'blur'
-            camera.awb_mode           = 'off' # 'fluorescent'
-            camera.awb_gains          = (1.2,1.2)
-            if (self.showpreview):
-				camera.start_preview()
-            # time.sleep(2)
-            # Setup the multi-threaded image processing factory
-            with imageprocessor.ProcessorManager(
-                numberofthreads       = self.numberofthreads,
-                processingfunction    = self.doObjectTracking
-                ) as manager:
-                self.manager = manager
-                # Start the PiCamera capture_sequence
-                camera.capture_sequence( manager.streamgenerator(),
-                                         use_video_port=True )
+        
+        self.workflow = WorkflowManager(
+            [ WorkerPool( 2,                    # Number of worker threads
+                          self.imagetracking,   # Function to process the image
+                          self.processingqueue, # Input queue for Images
+                          self.cameraqueue ) ]  # Output queue for Images
+        )
+
+        # Start the Camera capture 
+        self.capture = CameraCapture( self.camera,
+                                      self.cameraqueue,
+                                      self.processingqueue,
+                                      self.showpreview )
 
     def loop( self ):
         """
@@ -147,12 +133,14 @@ class TrackingRobot( threading.Thread ):
         Close down the robot controller and object tracking components. 
         """
         print( "Closing down robbie..." )
+        self.capture.close()
+        self.workflow.close()
         self.tracker.close()
         self.robot.close()
         while threading.active_count() > 1:
-            # for t in threading.enumerate():
-            #     print( t )
-            # print( '' )
+            for t in threading.enumerate():
+                print( t )
+            print( '' )
             time.sleep( 0.5 )
 
 # Local Variables:

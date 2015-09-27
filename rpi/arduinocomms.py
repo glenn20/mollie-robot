@@ -75,3 +75,4 @@ class ArduinoComms():
 
     def close( self ):
         self.serialmonitor.done = True
+        # self.serialmonitor.join()
