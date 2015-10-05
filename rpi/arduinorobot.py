@@ -40,9 +40,9 @@ class ArduinoRobot():
 
     # Simple method to do range checking
     def _constrain( self, n, minn, maxn ):
-        return (n if minn <= n <= maxn
-                else (minn if n < minn
-                      else maxn))
+        return (n if minn <= n <= maxn else
+                minn if n < minn else
+                maxn))
 
     def send( self, command ):
         """

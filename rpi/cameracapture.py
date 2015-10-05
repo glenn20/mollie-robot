@@ -25,7 +25,7 @@ class CameraCapture( threading.Thread ):
 
         Args:
             camera (picamera.PiCamera): A pre-configured Raspberry PiCamera object
-            inputqueue (Queue.Queue):   Input queue for loading Image objects
+            inputqueue  (Queue.Queue):  Input queue for loading Image objects
             outputqueue (Queue.Queue):  Output queue for Image objects after capture
             showpreview (boolean):      Display image capture preview on RPi console?
         """

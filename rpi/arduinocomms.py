@@ -22,6 +22,8 @@ class SerialMonitor( threading.Thread ):
         while not s == "Robot ready\r\n":
             s = self.port.readline()
             print ( "Arduino:", s )
+        print ( "Arduino:", s )
+        # Will call the run() method in the new thread...
         self.start()
 
     def run( self ):
@@ -40,7 +42,7 @@ class ArduinoComms():
 
     Methods:
         __init__(): Construct a comms controller.
-        send(): Send a command to the Arduino robot and check status byte.
+        send():  Send a command to the Arduino robot.
         close(): Close down the serial port monitor thread
     """
     def __init__( self, device="/dev/ttyS99", baudrate=115200, dummy = False ):
@@ -51,15 +53,13 @@ class ArduinoComms():
             dummy (= False): Flag to fake sending comms to Arduino (used for testing)
         
         """
-        self.dummy   = dummy
+        self.dummy         = dummy
         self.serialmonitor = SerialMonitor( device, baudrate )
 
     # Write a command to the Arduino over serial
     def send( self, command ):
         """
         Write a command to the Arduino over the I2C bus.
-
-        Writes the command and waits for Arduino to acknowledge receipt.
 
         Arguments:
             command (str): The command text to be sent to the Arduino.
