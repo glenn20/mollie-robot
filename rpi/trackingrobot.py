@@ -10,17 +10,17 @@ Robot control is through commands passed over the I2C bus to an Arduino Board.
 from __future__ import print_function
 
 import threading
+import Queue
 import time
 import sys, tty, termios
 
 import cv2
-import picamera
 
 #from getch import getch
 import arduinocomms
 import arduinorobot
 import colourtracker
-import imagecapture
+import cameracapture
 
 import workflow
 
@@ -32,7 +32,7 @@ class TrackingRobot():
     __init__() : Construct from a robot controller an object tracking module and a camera.
     run() : 
     """
-    def __init__( self, robot, tracker, picamera ):
+    def __init__( self, robot, tracker, camera, showpreview = False ):
         """
         Construct a robot which tracks objects using the RPI camera.
 
@@ -45,6 +45,7 @@ class TrackingRobot():
         self.robot           = robot
         self.tracker         = tracker
         self.camera          = camera
+        self.showpreview     = showpreview
 
         self.done            = False
         self.cameraqueue     = Queue.Queue()
@@ -96,18 +97,22 @@ class TrackingRobot():
         multi-threaded image capture and processing.
         """
         
-        self.workflow = WorkflowManager(
-            [ WorkerPool( 2,                    # Number of worker threads
-                          self.imagetracking,   # Function to process the image
-                          self.processingqueue, # Input queue for Images
-                          self.cameraqueue ) ]  # Output queue for Images
+        self.workflow = workflow.WorkflowManager(
+            [ workflow.WorkerPool(
+                2,                    # Number of worker threads
+                self.imagetracking,   # Function to process the image
+                self.processingqueue, # Input queue for Images
+                self.cameraqueue ) ]  # Output queue for Images
         )
 
         # Start the Camera capture 
-        self.capture = CameraCapture( self.camera,
-                                      self.cameraqueue,
-                                      self.processingqueue,
-                                      self.showpreview )
+        self.capture = cameracapture.CameraCapture( self.camera,
+                                                    self.cameraqueue,
+                                                    self.processingqueue,
+                                                    self.showpreview )
+        for t in threading.enumerate():
+            print( t )
+        print( '' )
 
     def loop( self ):
         """
@@ -137,10 +142,15 @@ class TrackingRobot():
         self.workflow.close()
         self.tracker.close()
         self.robot.close()
+        s = time.time()
         while threading.active_count() > 1:
-            for t in threading.enumerate():
-                print( t )
-            print( '' )
+            t = time.time()
+            if (t - s > 5):
+                # If we have bean waiting more than five seconds print out the threads
+                # still running.
+                for t in threading.enumerate():
+                    print( t )
+                    print( '' )
             time.sleep( 0.5 )
 
 # Local Variables:

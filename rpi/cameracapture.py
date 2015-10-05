@@ -3,11 +3,11 @@ import threading
 
 import imageprocessor
 
-class CameraCapture( theading.Thread ):
+class CameraCapture( threading.Thread ):
     """
     Setup the picamera image capture process in a new thread. Images will be captured
     to io.BytesIO streams in Image objects. After capture, Images will be put onto an
-    outputqueue ready for further processing....
+    outputqueue (Queue.Queue) ready for further processing....
 
     Methods:
     run():              Run the continuous image capture process
@@ -37,7 +37,7 @@ class CameraCapture( theading.Thread ):
         self.done           = False            # Flag to shutdown processing
         # Fill the inputqueue Image records - ready for capture
         for i in range(10):
-            self.inputqueue.put( Image() )
+            self.inputqueue.put( imageprocessor.Image() )
         # Call the "run()" method in the new thread
         self.start()
 
@@ -49,7 +49,7 @@ class CameraCapture( theading.Thread ):
         Setups up and executes the image capture and processing.
         """
         with self.camera as camera:
-            if (self.showpreview):
+            if self.showpreview:
                 camera.start_preview()
             # time.sleep(2)
             # This is the fastest method to capture a sequence of images from the camera

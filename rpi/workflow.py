@@ -9,7 +9,7 @@ class Worker( threading.Thread ):
     """
     sentinel = object()
 
-    def ___init__( self, processor, inputqueue, outputqueue, otherqueues = None ):
+    def __init__( self, processor, inputqueue, outputqueue, otherqueues = None ):
         super( Worker, self ).__init__()
         self.processor      = processor
         self.inputqueue     = inputqueue
@@ -85,9 +85,9 @@ class WorkerPool():
         Args:
         - numberofworkers: The number of worker threads to add.
         """
-        self.workers.extend( [ Workflow( self.processor, self.inputqueue,
-                                         self.outputqueue, self.otherqueues )
-                               for i in range( numberofworkers ) ] )
+        for i in range( numberofworkers ):
+            self.workers.append( Worker( self.processor, self.inputqueue,
+                                         self.outputqueue, self.otherqueues ) )
 
     def count( self ):
         """
@@ -118,7 +118,7 @@ class WorkflowManager():
         self.finishtime = None
         self.workflow   = workflow
 
-    def self.count():
+    def count( self ):
         # Return the number of items processed
         # - only count the items processed by the first pool of workers.
         return self.workflow[0].count() if self.workflow is not None else 0
@@ -128,9 +128,10 @@ class WorkflowManager():
         Print a summary of the workflow statistics.
         """
         elapsedtime = self.finishtime - self.starttime
+        count = self.count()
         print( "\r\n" )
         print( 'Processed %d items in %d seconds at %.2ffps\r\n'
-               % ( self.count(), elapsedtime, self.count / elapsedtime ) )
+               % ( count, elapsedtime, count / elapsedtime ) )
 
     # Cleanup up all the worker threads
     def close( self ):

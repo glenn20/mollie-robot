@@ -81,7 +81,8 @@ robot.Initialise()
 trackingrobot = trackingrobot.TrackingRobot(
     robot            = robot,
     tracker          = tracker,
-    camera           = camera
+    camera           = camera,
+    showpreview      = args.preview
     )
 
 # Now turn on the robot which will:
@@ -89,6 +90,7 @@ trackingrobot = trackingrobot.TrackingRobot(
 # - Use color slicing to locate objects in the images (multithreaded)
 # - Send the coords of the object to the arduino controlling the robot
 # - trap any keypresses and use them as remotecontrol for the robot
+trackingrobot.run()
 trackingrobot.loop()
 
 trackingrobot.close()

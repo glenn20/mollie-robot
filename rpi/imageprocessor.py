@@ -21,7 +21,7 @@ class Image():
         self.stream         = io.BytesIO()
         self.reset()
 
-    def reset( self )
+    def reset( self ):
         self.stream.seek( 0 )
         self.stream.truncate()
         self.img            = None
