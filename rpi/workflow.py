@@ -58,16 +58,20 @@ class WorkerPool():
     """
     A pool of threads to process items off a queue...
     """
-    def __init__( self, numberofworkers, processor, inputqueue, outputqueue, otherqueues = None ):
+    def __init__( self, numberofworkers, processor,
+                  inputqueue, outputqueue, otherqueues = None ):
         """
+        Create a pool of Worker threads for processing items on queues.
+        
         Args:
         - numberofworkers:  The number of worker threads to create.
-        - processor:        The function to process items: first arg is the item to process
-        -                   An optional second arg which is additional queues for other output
+        - processor:        The function to process items:
+                            - first arg is the item to process
+                            - optional second arg: additional queues for other output
         - inputqueue:       The queue for receiving items for processing
         - outputqueue:      The queue to put processed items on when finished
-        - otherqueues:      An optional list/tuple of queues to be passed to the processor function
-        -                   The procesor function may use these to run new workflows
+        - otherqueues:      Optional list/tuple of queues: passed to processor function
+                            - The processor function may use these to run new workflows
         """
         self.numberofworkers = numberofworkers
         self.processor       = processor
@@ -75,13 +79,13 @@ class WorkerPool():
         self.outputqueue     = outputqueue
         self.otherqueues     = otherqueues
         self.workers         = []
-
         # Now create the Worker threads
         self.addworkers( numberofworkers )
 
     def addworkers( self, numberofworkers ):
         """
         Add more worker threads to this pool.
+        
         Args:
         - numberofworkers: The number of worker threads to add.
         """
@@ -99,8 +103,10 @@ class WorkerPool():
         """
         Flag all the worker threads to finish processing the queues and close down.
         """
+        # Tell all the worker threads to wind up and close down.
         for worker in self.workers:
             worker.close()
+        # Wait for the worker threads to terminate.
         for worker in self.workers:
             worker.join()
 
@@ -110,7 +116,8 @@ class WorkflowManager():
     """
     def __init__( self, workflow ):
         """
-        Takes a workflow description and builds and initiates tasks to process the workflow
+        Takes a workflow description and initiates tasks to process the workflow.
+        
         Args:
         workflow: A list/tuple of WorkerPool objects which comprise the workflow
         """

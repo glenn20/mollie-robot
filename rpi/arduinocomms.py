@@ -4,7 +4,6 @@ Arduino communications interface - over Serial bus.
 
 from __future__ import print_function
 import serial
-import json
 import threading
 
 class SerialMonitor( threading.Thread ):
@@ -13,9 +12,11 @@ class SerialMonitor( threading.Thread ):
     """
     def __init__( self, device, baudrate ):
         super( SerialMonitor, self ).__init__()
-        self.device = device
-        self.port   = serial.Serial( self.device, baudrate=baudrate, timeout=None )
-        self.done   = False
+        self.device     = device
+        self.port       = serial.Serial( self.device, baudrate=baudrate, timeout=None )
+        self.callback   = None
+        self.done       = False
+
         # Opening the serial port resets the Arduino
         # - wait till it is ready
         s = ""
@@ -23,15 +24,20 @@ class SerialMonitor( threading.Thread ):
             s = self.port.readline()
             print ( "Arduino:", s )
         print ( "Arduino:", s )
-        # Will call the run() method in the new thread...
+        # Will call the run() method in a new thread...
         self.start()
+
+    def setcallback( self, callback ):
+        self.callback = callback
 
     def run( self ):
         while not self.done:
             s = self.port.readline()
             try:
-                d = json.loads( s )
-                # print( "Robot=", d, end="\r\n" )
+                if self.callback is not None:
+                    self.callback( s )
+                else:
+                    print( "Arduino: ", s, "\r\n" )
             except ValueError as msg:
                 print( msg, s, end="\r\n" )
 
@@ -53,8 +59,13 @@ class ArduinoComms():
             dummy (= False): Flag to fake sending comms to Arduino (used for testing)
         
         """
-        self.dummy         = dummy
-        self.serialmonitor = SerialMonitor( device, baudrate )
+        self.dummy = dummy
+        if not self.dummy:
+            self.serialmonitor = SerialMonitor( device, baudrate )
+
+    def setcallback( self, callback ):
+        if not self.dummy:
+            self.serialmonitor.setcallback( callback )
 
     # Write a command to the Arduino over serial
     def send( self, command ):
@@ -74,5 +85,6 @@ class ArduinoComms():
         return True
 
     def close( self ):
-        self.serialmonitor.done = True
-        # self.serialmonitor.join()
+        if not self.dummy:
+            self.serialmonitor.done = True
+            # self.serialmonitor.join()

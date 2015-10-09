@@ -21,7 +21,6 @@ import arduinocomms
 import arduinorobot
 import colourtracker
 import cameracapture
-
 import workflow
 
 class TrackingRobot():
@@ -96,7 +95,7 @@ class TrackingRobot():
         Setups up and executes the
         multi-threaded image capture and processing.
         """
-        
+        # Create the workflow to process the images which will appear on processingqueue
         self.workflow = workflow.WorkflowManager(
             [ workflow.WorkerPool(
                 2,                    # Number of worker threads
@@ -105,11 +104,14 @@ class TrackingRobot():
                 self.cameraqueue ) ]  # Output queue for Images
         )
 
-        # Start the Camera capture 
+        # Start the Camera capture - will run in it's own thread.
+        # Captured images will be placed on processingqueue
+        # to be processed by self.workflow.
         self.capture = cameracapture.CameraCapture( self.camera,
                                                     self.cameraqueue,
                                                     self.processingqueue,
                                                     self.showpreview )
+        # Diagnostic: Print all the threads we have started. 
         for t in threading.enumerate():
             print( t )
         print( '' )
@@ -150,7 +152,7 @@ class TrackingRobot():
                 # still running.
                 for t in threading.enumerate():
                     print( t )
-                    print( '' )
+                print( '' )
             time.sleep( 0.5 )
 
 # Local Variables:

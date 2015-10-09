@@ -5,6 +5,29 @@ Classes:
     ArduinoRobot: The manager of the Arduino robot.
 """
 
+from __future__ import print_function
+import json
+
+class RobotState:
+    def __init__( self ):
+        self.time       = 0
+        self.junk       = "junk"
+        self.headX      = 0
+        self.headY      = 0
+        self.setspeedL  = 0
+        self.setspeedR  = 0
+        self.speedL     = 0
+        self.speedR     = 0
+        self.powerL     = 0
+        self.powerR     = 0
+        self.countsL    = 0
+        self.countsR    = 0
+
+    def update( self, s ):
+        d = json.loads( s )
+        self.__dict__.update( d )
+        print( "Robot=", self.__dict__, end="\r\n" )
+
 # Construct robots with a comms object
 # Just requires a "send" method to send commands to the arduino
 class ArduinoRobot():
@@ -37,12 +60,18 @@ class ArduinoRobot():
         self.angleY     = 0
         self.trackingOn = False
         self.arduino    = arduinoComms
+        self.robotstate = RobotState()
+        self.arduino.setcallback( self.process_arduino_response )
+
+    def process_arduino_response( self, s ):
+        self.robotstate.update( s )
+
 
     # Simple method to do range checking
     def _constrain( self, n, minn, maxn ):
-        return (n if minn <= n <= maxn else
-                minn if n < minn else
-                maxn))
+        return (minn if n < minn else
+                maxn if maxn < n else
+                n)
 
     def send( self, command ):
         """

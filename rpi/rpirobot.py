@@ -62,6 +62,7 @@ tracker = colourtracker.ColourTracker(
     tune_hsv         = args.tunehsv
     )
 
+# Setup the Raspberry Pi camera
 resolution = (320, 240)
 camera = picamera.PiCamera()
 camera.preview_fullscreen = False
@@ -77,7 +78,7 @@ camera.awb_gains          = (1.2,1.2)
 # Connect to and initialise the arduino robot
 robot.Initialise()
 
-# Assemble our combined TrackingRobot from a robot and a tracker
+# Assemble our combined TrackingRobot from a robot, a camera and a tracker
 trackingrobot = trackingrobot.TrackingRobot(
     robot            = robot,
     tracker          = tracker,
