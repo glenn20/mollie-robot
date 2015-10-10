@@ -23,7 +23,6 @@ class SerialMonitor( threading.Thread ):
         while not s == "Robot ready\r\n":
             s = self.port.readline()
             print ( "Arduino:", s )
-        print ( "Arduino:", s )
         # Will call the run() method in a new thread...
         self.start()
 

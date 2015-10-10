@@ -102,9 +102,26 @@ class ArduinoRobot():
         """
         self.speed     = self._constrain( speed, -255, 255 )
         self.direction = self._constrain( direction, -0.1, 0.1 )
-        return self.send( "run %d %d"
-                          % (int(round(self.speed)),
-                             int(round(self.direction * 1000))) )
+
+        difference = direction * 500 / 1000
+        left  = speed + 0.5 * difference
+        right = speed - 0.5 * difference
+        if (left > 255):
+            left  = 255
+            right = left - difference
+        elif (left < -255):
+            left  = -255
+            right = left + difference
+        if (right > 255):
+            right = 255
+            left  = right + difference
+        elif (right < -255):
+            right = -255;
+            left  = right - difference
+
+        return self.send( "{'setspeedL':%d,'setspeedR':%d}"
+                          % (int(round(left)),
+                             int(round(right))) )
 
     # Tell the robot to move at "speed" in "direction"
     def Power( self, power ):
@@ -115,7 +132,7 @@ class ArduinoRobot():
             power (int): power setting for robot motors.
         """
         self.power     = self._constrain( power, -255, 255 )
-        return self.send( "setpower %d %d"
+        return self.send( "{'powerL':%d,'powerR':%d}"
                           % (int(round(self.power)),
                              int(round(self.power))) )
 
@@ -133,7 +150,7 @@ class ArduinoRobot():
         self.angleX = self._constrain( angleX, -90, 90 )
         if angleY > -1000:
             self.angleY = self._constrain( angleY, -90, 90 )
-        return self.send( "look %d %d"
+        return self.send( "{'headX':%d,'headY':%d}"
                           % (self.angleX, self.angleY) )
 
     # Tell the robot to track to the given angles
