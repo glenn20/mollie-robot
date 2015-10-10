@@ -1,7 +1,6 @@
 // -*- c++ -*-
 
 #include <Arduino.h>
-#include <PID_v1.h>
 
 #define USEAFMOTOR
 
@@ -119,22 +118,6 @@ Robot robbie      (		// Robbie the robot is built from...
 void leftEncoderISR()  {robbie.leftwheel().encoder().update(); }
 void rightEncoderISR() {robbie.rightwheel().encoder().update();}
 
-// --- Init PID Controller ---
-double posX = 0.0;
-double posY = 0.0;
-
-//Define Variables we'll be connecting to
-double SetpointX, InputX, OutputX;
-double SetpointY, InputY, OutputY;
-double Setpointbody, Inputbody, Outputbody;
-
-//Specify the links and initial tuning parameters
-// face tracking: 0.8, 0.6, 0
-// color tracking: 0.4, 0.4, 0
-PID myPIDX(&InputX, &OutputX, &SetpointX, 0.2, 0.0, 0.0, DIRECT);
-PID myPIDY(&InputY, &OutputY, &SetpointY, 0.2, 0.0, 0.0, DIRECT);
-PID myPIDbody(&Inputbody, &Outputbody, &Setpointbody, 5.0, 0.0, 0.0, DIRECT);
-
 void SetupRobot()
 {
     // Initialise the I2C wire comms with the Raspberry Pi
@@ -146,18 +129,6 @@ void SetupRobot()
     robbie.enable();
     delay(1);
     Serial.println( "Robot ready" );
-
-    // --- Setup PID ---
-    SetpointX = 0;
-    SetpointY = 0;
-    Setpointbody = 0;
-    myPIDX.SetOutputLimits(-90, 90);
-    myPIDY.SetOutputLimits(-90, 90);
-    myPIDbody.SetOutputLimits(-100, 100);
-    //turn PIDs on
-    myPIDX.SetMode(AUTOMATIC);
-    myPIDY.SetMode(AUTOMATIC);
-    myPIDbody.SetMode(AUTOMATIC);
 }
 
 void LoopRobot()
@@ -165,93 +136,11 @@ void LoopRobot()
     // If a command is available - process it...
     char *s = ReadCommand_serial();
     if (s != NULL) {
-	RobotCommand( s );
+	robbie.robotcommand( s );
     }
 
     // Update the Robot...
     robbie.Loop();
-}
-
-// Process a line of text containing commands to move the motors
-// Returns true if any action was taken, else return false.
-bool RobotCommand( char* line )
-{
-    char command[20] = "";// A string to hold the command
-    int  numbers[8];      // The list of numbers following the command
-
-    // Every command starts with the <command>, then up to eight integer numbers
-    int n = sscanf( line, "%20s %d %d %d %d %d %d %d %d", 
-		    command, 
-		    &numbers[0], &numbers[1], &numbers[2], &numbers[3], 
-		    &numbers[4], &numbers[5], &numbers[6], &numbers[7] );
-    String cmd = command;
-    n--;
-    if (cmd == "run" && n == 2) {
-	// For all the motor numbers provided, set them to the speed provided
-	//   run 235 -235"
-	int speed = numbers[0];
-	int direction = numbers[1];
-	robbie.run( speed, direction );
-    } else if (cmd == "setpower" && n == 2) {
-	// For all the motor numbers provided, set them to the speed provided
-	//   power 235 -235"
-	int power1 = numbers[0];
-	int power2 = numbers[1];
-	robbie.leftwheel().setpower( power1 );
-	robbie.rightwheel().setpower( power2 );
-    } else if (cmd == "setdirection" && n == 1) {
-	// Set the motor directions
-	// 1 means Forward, 0 means Backward
-	//   setdirection 0
-	robbie.run( robbie.speed(), numbers[0] );
-    } else if (cmd == "look" && n == 2) {
-	// set servo angle for the robot head - and camera
-	int anglex = numbers[0];
-	int angley = numbers[1];
-	robbie.look( anglex, angley );
-    } else if (cmd == "enable" && n == 0) {
-	// Enable both motors
-	robbie.enable();
-    } else if (cmd == "disable" && n == 0) {
-	// Disable both motors
-	robbie.disable();
-    } else if (cmd == "track" && n == 2) {
-	// set servo angle
-	// servo 0-180
-	InputX = numbers[0];
-	InputY = numbers[1];
-	myPIDX.Compute();
-	myPIDY.Compute();
-	if (-2.0 < InputX && InputX < 2.0) {
-	    // Accept small angles
-	    OutputX = 0;
-	}
-	if (-2.0 < InputY && InputY < 2.0) {
-	    // Accept small angles
-	    OutputY = 0;
-	}
-	// Update Servo Position
-	//posX = robbie.head().angleX();
-	//posY = robbie.head().angleY();
-	posX = constrain(posX + OutputX, -90, 90);
-	posY = constrain(posY - OutputY, -90, 90);
-	//Serial.print( "Camera direction: " );
-	//Serial.println( posX );
-	robbie.look( posX, posY );
-    
-	// Now, turn the body toward where the camera is looking
-	//Inputbody = posX;
-	//myPIDbody.Compute();
-    
-	//if (-5.0 < Outputbody && Outputbody < 5.0) {
-	//    return true;
-	//}
-	//int direction = constrain( Outputbody, -100, 100 );
-	//Serial.print( "Robot direction: " );
-	//Serial.println( direction );
-	//robbie.run( robbie.speed(), direction );
-    }
-    return true;
 }
 
 // Local Variables:

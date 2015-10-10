@@ -31,7 +31,11 @@ public:
 
     bool     Loop();
 
+    void     dotrackingPID( int x, int y );
+    bool     robotcommand( char* line );
+
     void     sendjson();
+    bool     processjson( char *json );
 
     Wheel&   leftwheel()  { return m_leftwheel;  };
     Wheel&   rightwheel() { return m_rightwheel; };
@@ -40,10 +44,6 @@ private:
     Wheel&   m_leftwheel;
     Wheel&   m_rightwheel;
     Head&    m_head;
-    int      m_leftspeed;
-    int      m_rightspeed;
-    int      m_speed;
-    int      m_direction;
     unsigned long m_tick;               // An internal loop counter
 };
 

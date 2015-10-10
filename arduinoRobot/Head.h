@@ -4,6 +4,7 @@
 #define HEAD_H
 
 #include <Servo.h>
+#include <PID_v1.h>
 
 // A helper class for the robot "Head"
 // This class trivially wraps the Arduino Servo class.

@@ -1,5 +1,9 @@
 // -*- c++ -*-
 
+#include <PID_v1.h>
+
+#include <string.h>
+
 #include "Robot.h"
 
 #include <ArduinoJson.h>
@@ -12,10 +16,6 @@ Robot::Robot( Wheel&       leftwheel,
     :         m_leftwheel  ( leftwheel ),
 	      m_rightwheel ( rightwheel ),
 	      m_head       ( head ),
-	      m_leftspeed  ( 0 ),
-	      m_rightspeed ( 0 ),
-	      m_speed      ( 0 ),
-	      m_direction  ( 0 ),
 	      m_tick       ( 0 )
 {
 }
@@ -41,22 +41,17 @@ void Robot::disable()
 
 int Robot::leftspeed()
 {
-    return m_leftspeed;
+    return m_leftwheel.speed();
 }
 
 int Robot::rightspeed()
 {
-    return m_rightspeed;
+    return m_rightwheel.speed();
 }
 
 int Robot::speed()
 {
-    return m_speed;
-}
-
-int Robot::direction()
-{
-    return m_direction;
+    return (leftspeed() + rightspeed()) / 2.0;
 }
 
 int Robot::setpower( int power )
@@ -67,40 +62,8 @@ int Robot::setpower( int power )
     return true;
 }
 
-bool Robot::run( int speed, int direction )
+bool Robot::run( int left, int right )
 {
-    if (speed < -255) {
-	speed = -255;
-    } else if (speed > 255) {
-	speed = 255;
-    }
-    if (direction < -1000) {
-	direction = -1000;
-    } else if (direction > 1000) {
-	direction = 1000;
-    }
-    int difference = direction * 500 / 1000;
-    int left  = speed + 0.5 * difference;
-    int right = speed - 0.5 * difference;
-    if (left > 255) {
-	left  = 255;
-	right = left - difference;
-    } else if (left < -255) {
-	left  = -255;
-	right = left + difference;
-    }
-    if (right > 255) {
-	right = 255;
-	left  = right + difference;
-    } else if (right < -255) {
-	right = -255;
-	left  = right - difference;
-    }
-    m_speed = speed;
-    m_direction = direction;
-    m_leftspeed = left;
-    m_rightspeed = right;
-
     m_leftwheel.run( left );
     m_rightwheel.run( right );
 
@@ -131,10 +94,110 @@ bool Robot::Loop()
     return true;
 }
 
+// --- Init PID Controller ---
+double posX = 0.0;
+double posY = 0.0;
+
+//Define Variables we'll be connecting to
+double SetpointX = 0, InputX = 0, OutputX = 0;
+double SetpointY = 0, InputY = 0, OutputY = 0;
+double Setpointbody = 0, Inputbody = 0, Outputbody = 0;
+
+//Specify the links and initial tuning parameters
+// face tracking: 0.8, 0.6, 0
+// color tracking: 0.4, 0.4, 0
+PID myPIDX(&InputX, &OutputX, &SetpointX, 0.2, 0.0, 0.0, DIRECT);
+PID myPIDY(&InputY, &OutputY, &SetpointY, 0.2, 0.0, 0.0, DIRECT);
+PID myPIDbody(&Inputbody, &Outputbody, &Setpointbody, 5.0, 0.0, 0.0, DIRECT);
+
+void SetupPID()
+{
+    // --- Setup PID ---
+    myPIDX.SetOutputLimits(-90, 90);
+    myPIDY.SetOutputLimits(-90, 90);
+    myPIDbody.SetOutputLimits(-100, 100);
+    //turn PIDs on
+    myPIDX.SetMode(AUTOMATIC);
+    myPIDY.SetMode(AUTOMATIC);
+    myPIDbody.SetMode(AUTOMATIC);
+}
+
+void Robot::dotrackingPID( int x, int y )
+{
+    static bool initialised = false;
+
+    if (!initialised) {
+	SetupPID();
+	initialised = true;
+    }
+    // set servo angle
+    // servo 0-180
+    InputX = x;
+    InputY = y;
+    myPIDX.Compute();
+    myPIDY.Compute();
+    if (-2.0 < InputX && InputX < 2.0) {
+	// Accept small angles
+	OutputX = 0;
+    }
+    if (-2.0 < InputY && InputY < 2.0) {
+	// Accept small angles
+	OutputY = 0;
+    }
+    // Update Servo Position
+    //posX = robbie.head().angleX();
+    //posY = robbie.head().angleY();
+    posX = constrain(posX + OutputX, -90, 90);
+    posY = constrain(posY - OutputY, -90, 90);
+    //Serial.print( "Camera direction: " );
+    //Serial.println( posX );
+    look( posX, posY );
+    
+    // Now, turn the body toward where the camera is looking
+    //Inputbody = posX;
+    //myPIDbody.Compute();
+    
+    //if (-5.0 < Outputbody && Outputbody < 5.0) {
+    //    return true;
+    //}
+    //int direction = constrain( Outputbody, -100, 100 );
+    //Serial.print( "Robot direction: " );
+    //Serial.println( direction );
+    //robbie.run( robbie.speed(), direction );
+}
+
+// Process a line of text containing commands to move the motors
+// Returns true if any action was taken, else return false.
+bool Robot::robotcommand( char* line )
+{
+    char command[20] = "";// A string to hold the command
+    int  numbers[8];      // The list of numbers following the command
+
+    if (line[0] == '{') {
+	return processjson( line );
+    }
+
+    // Every command starts with the <command>, then up to eight integer numbers
+    int n = sscanf( line, "%20s %d %d %d %d %d %d %d %d", 
+		    command, 
+		    &numbers[0], &numbers[1], &numbers[2], &numbers[3], 
+		    &numbers[4], &numbers[5], &numbers[6], &numbers[7] );
+    String cmd = command;
+    n--;
+    if (cmd == "track" && n == 2) {
+	// int anglex = numbers[0];
+	// int angley = numbers[1];
+	// look( anglex, angley );
+	dotrackingPID( numbers[0], numbers[1] );
+    } else {
+	Serial.print( "Arduino: Unknown command: " );
+	Serial.println( line );
+    }
+    return true;
+}
+
 void Robot::sendjson()
 {
-    //Serial.println( "JSON" );
-    //return;
     // The internal buffer for the Json objects
     StaticJsonBuffer<200> jsonBuffer;
 
@@ -154,6 +217,42 @@ void Robot::sendjson()
 
     root.printTo( Serial );
     Serial.println();
+}
+
+bool Robot::processjson( char *json )
+{
+    // The internal buffer for the Json objects
+    StaticJsonBuffer<200> jsonBuffer;
+
+    JsonObject& root = jsonBuffer.parseObject( json );
+    
+    if (!root.success()) {
+	Serial.print( "Processing Json: parseObject() failed:" );
+	Serial.println( json );
+	return false;
+    }
+    
+    for (JsonObject::iterator it=root.begin(); it != root.end(); ++it) {
+	char k[100];
+	strncpy( k, it->key, 100 );
+	String key = k;
+	int  value = it->value;
+	if        (key == "headX") {
+	    m_head.lookX( value );
+	} else if (key == "headY") {
+	    m_head.lookY( value );
+	} else if (key == "setspeedL") {
+	    m_leftwheel.run( value );
+	} else if (key == "setspeedR") {
+	    m_rightwheel.run( value );
+	} else if (key == "powerL") {
+	    m_leftwheel.setpower( value );
+	} else if (key == "powerR") {
+	    m_rightwheel.setpower( value );
+	} // Silently ignore any other json keys - for now
+    }
+
+    return true;
 }
 
 // Local Variables:
