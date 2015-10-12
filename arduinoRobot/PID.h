@@ -15,7 +15,7 @@ public:
 	  m_output( 0.0 ),
 	  m_Kp    ( Kp ),
 	  m_Ki    ( Ki ),
-	  M_Kd    ( Kd )
+	  m_Kd    ( Kd ),
 	  m_pid( &m_actual, &m_output, &m_target, m_Kp, m_Ki, m_Kd, DIRECT )
 	{
 	    m_pid.SetOutputLimits( min, max );
@@ -27,8 +27,8 @@ public:
 		    double  actual,
 		    double* output
 	) {
-	m_actualspeed = actual;
-	m_setspeed    = target;
+	m_actual  = actual;
+	m_target  = target;
 	if (m_pid.Compute()) {
 	    if (output != NULL) {
 		*output = m_output;
