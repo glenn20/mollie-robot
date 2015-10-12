@@ -147,7 +147,8 @@ class WorkflowManager():
         """
         # Tell the worker threads to finish and wait for them to terminate...
         for workerpool in self.workflow:
-            workerpool.close()
+            if workerpool is not None:
+                workerpool.close()
         self.finishtime = time.time()
         self.report()
 
