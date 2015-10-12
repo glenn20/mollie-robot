@@ -78,11 +78,12 @@ camera.awb_gains          = (1.2,1.2)
 # Connect to and initialise the arduino robot
 robot.Initialise()
 
-# Assemble our combined TrackingRobot from a robot, a camera and a tracker
+# Assemble our combined TrackingRobot from a robot, a camera and a tracker 
 trackingrobot = trackingrobot.TrackingRobot(
     robot            = robot,
     tracker          = tracker,
     camera           = camera,
+    show_images      = args.show,
     showpreview      = args.preview
     )
 

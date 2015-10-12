@@ -47,21 +47,6 @@ class ColourTracker():
         image.bestcontour = max( image.contours, key=lambda c: cv2.contourArea( c ) )
         return cv2.moments( image.bestcontour, 0 )
 
-    def Showimage( self, image ):
-        if image.moments is not None:
-            # Draw all the contours in red
-            cv2.drawContours( image.img, image.contours,     -1, (0,0,255), 2 )
-            # Draw the max contour in blue
-            cv2.drawContours( image.img, [image.bestcontour], 0, (255,0,0), 2 )
-
-        if image.location[0] is not None:
-            # Draw a circle around the tracking point
-            cv2.circle( image.img, image.location, 20, (0,255,0), 2 );
-
-        # update display windows
-        cv2.imshow( "output", image.img )
-        return
-
     # Read an image from the stream
     # Return the coordinates and area of the object (posx, posy, area)
     # The centre of the image is at (posx, posy) = (0, 0)
@@ -77,29 +62,43 @@ class ColourTracker():
         imgFiltered = self._ColorThreshold( image.img )
 
         # Calculate moments from the largest contour, or the threshold image
-        image.moments = self._getMoments( imgFiltered, image )
-        if not image.moments:
+        moments = self._getMoments( imgFiltered, image )
+        if not moments:
             return False
 
-        area = image.moments['m00']
+        area = moments['m00']
         if (area < 1):
             return False
 
         image.location = (None,None)
         image.track    = (None,None,None)
         # Calculate the centre of gravity of the largest "blob" of colour we found
-        image.location = (int(image.moments['m10'] / area),
-                          int(image.moments['m01'] / area))
+        image.location = (int(moments['m10'] / area),
+                          int(moments['m01'] / area))
         # Convert coords so (0,0) is at centre of image and Y is upward
         image.track = (+(image.location[0] - image.img.shape[1]/2),
                        -(image.location[1] - image.img.shape[0]/2),
                        area)
 
-        if self.show_images:
-            self.Showimage( image )
-
         # Return the coords of the object and it's area
         return True
+
+    def Showimage( self, image ):
+        if image.contours:
+            # Draw all the contours in red
+            cv2.drawContours( image.img, image.contours,     -1, (0,0,255), 2 )
+            # Draw the max contour in blue
+            cv2.drawContours( image.img, [image.bestcontour], 0, (255,0,0), 2 )
+
+        if image.location[0] is not None:
+            # Draw a circle around the tracking point
+            cv2.circle( image.img, image.location, 20, (0,255,0), 2 );
+
+        # update display windows
+        cv2.imshow( "output", image.img )
+        # Need this to make the display update (also adds pause to thread)
+        cv2.waitKey( 100 )
+        return
 
     def SetHSVSlice( self, hsv_slice ):
         if hsv_slice is not None:

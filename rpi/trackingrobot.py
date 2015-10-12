@@ -28,45 +28,41 @@ class TrackingRobot():
     Create an object tracker and remote control for an arduino robot.
 
     Methods:
-    __init__() : Construct from a robot controller an object tracking module and a camera.
+    __init__() : Create an object tracking arduino controller robot.
     run() : 
     """
-    def __init__( self, robot, tracker, camera, showpreview = False ):
+    def __init__( self, robot, tracker, camera,
+                  show_images = False, showpreview = False ):
         """
         Construct a robot which tracks objects using the RPI camera.
 
         Arguments:
-            robot (ArduinoRobot): Interface to the arduino-controlled robot
+            robot   (ArduinoRobot): Interface to the arduino-controlled robot
             tracker (ColourTracker): The object tracking class.
-            resolution (x,y): Resolution for image capture (RPI camera)
-            numberofthreads: Number of threads for image processing
+            camera: (PiCamera.picamera): Raspberry Pi Camera instance
         """
         self.robot           = robot
         self.tracker         = tracker
         self.camera          = camera
+        self.show_images     = show_images
         self.showpreview     = showpreview
 
         self.done            = False
         self.cameraqueue     = Queue.Queue()
         self.processingqueue = Queue.Queue()
-        self.displayqueue    = Queue.Queue()
+        self.displayqueue    = Queue.Queue( 1 )
         self.workflow        = None
         self.capture         = None
 
-    # Process any pending key presses in the opencv window
-    # Process these as remote controls for the robot
-    def _handlekeypresses( self ):
-        c = cv2.waitKey( 50 )
-        if c < 0:        # No keys ready
-            return True
-        c = chr( c & 255 )  # Bugfix - this is needed for opencv on 64bit linux
-        return (self.robot.RemoteControl( c ) is not None)
+    def displayimage( self, image ):
+        self.tracker.Showimage( image )
+        return image
 
     # The function to process each captured image
     # Process each image to identify location of object
     # Send the location of the object to the arduino
     # Process any key presses as remotecontrol for the robot
-    def imagetracking( self, image ):
+    def imagetracking( self, image, otherqueues ):
         """
         Process captured images and locate object for tracking.
 
@@ -81,27 +77,39 @@ class TrackingRobot():
         if self.tracker.Track( image ):
             # Send the coordinates to the robot - if we found our target
             self.robot.TrackObject( *image.track )
-        # print( "(%d, %d, %d)\r\n" % (posX, posY, area) )
-        # Process any pending key presses
-        if (self.done):
-            return None
-        return image if self._handlekeypresses() else None
+        if self.show_images:
+            try:
+                # Put on the display queue - unless it is full (only takes one).
+                otherqueues[0].put_nowait( image )
+                return None
+            except Queue.Full:
+                pass
+        return image
 
     # Setup the camera and run the image capture process
     def run( self ):
         """
         Run the image capture and processing and robot control loop.
 
-        Setups up and executes the
-        multi-threaded image capture and processing.
+        Setups up and executes the multi-threaded image capture and processing.
         """
-        # Create the workflow to process the images which will appear on processingqueue
+        # Create a workflow to process images which appear on processingqueue
         self.workflow = workflow.WorkflowManager(
-            [ workflow.WorkerPool(
-                2,                    # Number of worker threads
-                self.imagetracking,   # Function to process the image
-                self.processingqueue, # Input queue for Images
-                self.cameraqueue ) ]  # Output queue for Images
+            [
+                workflow.WorkerPool(
+                    2,                    # Number of worker threads
+                    self.imagetracking,   # Function to process the image
+                    self.processingqueue, # Input queue for Images
+                    self.cameraqueue,     # Output queue for Images
+                    (self.displayqueue,)  # Queue for displaying images
+                ),
+                workflow.WorkerPool(
+                    1,                    # Number of worker threads
+                    self.displayimage,    # Function to display the image
+                    self.displayqueue,    # Input queue for Images to display
+                    self.cameraqueue      # Output queue to recycle Images
+                ) if self.show_images else None
+            ]
         )
 
         # Start the Camera capture - will run in it's own thread.
