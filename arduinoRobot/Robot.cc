@@ -54,10 +54,10 @@ int Robot::speed()
     return (leftspeed() + rightspeed()) / 2.0;
 }
 
-int Robot::setpower( int power )
+bool Robot::setpower( int left, int right )
 {
-    m_leftwheel.setpower( power );
-    m_rightwheel.setpower( power );
+    m_leftwheel.setpower( left );
+    m_rightwheel.setpower( right );
 
     return true;
 }
@@ -202,18 +202,24 @@ void Robot::sendjson()
     StaticJsonBuffer<200> jsonBuffer;
 
     JsonObject& root = jsonBuffer.createObject();
+    JsonArray* data;
 
     root["time"]     = millis();
-    root["headX"]    .set( m_head.angleX() );
-    root["headY"]    .set( m_head.angleY() );
-    root["setspeedL"].set( m_leftwheel .setspeed() );
-    root["setspeedR"].set( m_rightwheel.setspeed() );
-    root["speedL"]   .set( m_leftwheel .speed() );
-    root["speedR"]   .set( m_rightwheel.speed() );
-    root["powerL"]   = m_leftwheel .power();
-    root["powerR"]   = m_rightwheel.power();
-    root["countsL"]  = m_leftwheel .encoder().count();
-    root["countsR"]  = m_rightwheel.encoder().count();
+    data = &root.createNestedArray("head");
+    data->add( m_head.angleX() );
+    data->add( m_head.angleY() );
+    data = &root.createNestedArray("setspeed");
+    data->add( m_leftwheel .setspeed() );
+    data->add( m_rightwheel.setspeed() );
+    data = &root.createNestedArray("power");
+    data->add( m_leftwheel .power() );
+    data->add( m_rightwheel.power() );
+    data = &root.createNestedArray("speed");
+    data->add( m_leftwheel .speed() );
+    data->add( m_rightwheel.speed() );
+    data = &root.createNestedArray("counts");
+    data->add( m_leftwheel .encoder().count() );
+    data->add( m_rightwheel.encoder().count() );
 
     root.printTo( Serial );
     Serial.println();
@@ -231,24 +237,17 @@ bool Robot::processjson( char *json )
 	Serial.println( json );
 	return false;
     }
-    
+
     for (JsonObject::iterator it=root.begin(); it != root.end(); ++it) {
 	char k[100];
 	strncpy( k, it->key, 100 );
 	String key = k;
-	int  value = it->value;
-	if        (key == "headX") {
-	    m_head.lookX( value );
-	} else if (key == "headY") {
-	    m_head.lookY( value );
-	} else if (key == "setspeedL") {
-	    m_leftwheel.run( value );
-	} else if (key == "setspeedR") {
-	    m_rightwheel.run( value );
-	} else if (key == "powerL") {
-	    m_leftwheel.setpower( value );
-	} else if (key == "powerR") {
-	    m_rightwheel.setpower( value );
+	if (key == "head") {
+	    m_head.look( (it->value)[0], (it->value)[1] );
+	} else if (key == "setspeed") {
+	    run( (it->value)[0], (it->value)[1] );
+	} else if (key == "power") {
+	    setpower( (it->value)[0], (it->value)[1] );
 	} // Silently ignore any other json keys - for now
     }
 

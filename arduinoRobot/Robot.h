@@ -16,7 +16,8 @@ public:
 	     Head&        head
 	);
   
-    bool     run( int speed, int direction );
+    bool     run( int left, int right );
+    bool     setpower( int left, int right );
     void     look( float angleX, float angleY );
     void     look( float angleX );
 
@@ -27,7 +28,6 @@ public:
     int      rightspeed();
     int      speed();
     int      direction();
-    int      setpower( int power );
 
     bool     Loop();
 
