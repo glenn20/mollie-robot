@@ -6,27 +6,28 @@ Classes:
 """
 
 from __future__ import print_function
+import time
 import json
 
 class RobotState:
     def __init__( self ):
         self.time       = 0
-        self.junk       = "junk"
-        self.headX      = 0
-        self.headY      = 0
-        self.setspeedL  = 0
-        self.setspeedR  = 0
-        self.speedL     = 0
-        self.speedR     = 0
-        self.powerL     = 0
-        self.powerR     = 0
-        self.countsL    = 0
-        self.countsR    = 0
+        self.head       = [0,0]
+        self.setspeed   = [0,0]
+        self.power      = [0,0]
 
     def update( self, s ):
         d = json.loads( s )
         self.__dict__.update( d )
-        print( "Robot=", self.__dict__, end="\r\n" )
+        print( "Robot =", self.__dict__, end="\r\n" )
+        return d
+
+    def state( self, d ):
+        s = json.dumps( d, separators=(',',':') )
+        self.__dict__.update( d )
+        self.time = time.time()
+        print( "Target=", self.__dict__, end="\r\n" )
+        return s
 
 # Construct robots with a comms object
 # Just requires a "send" method to send commands to the arduino
@@ -60,12 +61,12 @@ class ArduinoRobot():
         self.angleY     = 0
         self.trackingOn = False
         self.arduino    = arduinoComms
+        self.targetstate= RobotState()
         self.robotstate = RobotState()
         self.arduino.setcallback( self.process_arduino_response )
 
     def process_arduino_response( self, s ):
         self.robotstate.update( s )
-
 
     # Simple method to do range checking
     def _constrain( self, n, minn, maxn ):
@@ -119,9 +120,10 @@ class ArduinoRobot():
             right = -255;
             left  = right - difference
 
-        return self.send( "{'setspeedL':%d,'setspeedR':%d}"
-                          % (int(round(left)),
-                             int(round(right))) )
+        return self.send(
+            self.targetstate.state( {"setspeed": [int(round(left)),
+                                                  int(round(right))]} )
+        )
 
     # Tell the robot to move at "speed" in "direction"
     def Power( self, power ):
@@ -132,9 +134,11 @@ class ArduinoRobot():
             power (int): power setting for robot motors.
         """
         self.power     = self._constrain( power, -255, 255 )
-        return self.send( "{'powerL':%d,'powerR':%d}"
-                          % (int(round(self.power)),
-                             int(round(self.power))) )
+        return self.send(
+            self.targetstate.state( {"power":
+                                     [int(round(self.power)),
+                                      int(round(self.power))]} )
+        )
 
     # Tell the robot to point camera at "angle"
     def Look( self, angleX, angleY = -1000 ):
@@ -150,8 +154,9 @@ class ArduinoRobot():
         self.angleX = self._constrain( angleX, -90, 90 )
         if angleY > -1000:
             self.angleY = self._constrain( angleY, -90, 90 )
-        return self.send( "{'headX':%d,'headY':%d}"
-                          % (self.angleX, self.angleY) )
+        return self.send(
+            self.targetstate.state( {"head": [ self.angleX, self.angleY]} )
+        )
 
     # Tell the robot to track to the given angles
     def Track( self, x, y ):
@@ -177,8 +182,8 @@ class ArduinoRobot():
             area: The area of the identified object.
         """
         # If the image is big enough - track it!!!
-        posX *= 20.0 / 115.0    # Calibrate - convert camera pixels to degrees
-        posY *= 20.0 / 115.0
+        # posX *= 20.0 / 115.0    # Calibrate - convert camera pixels to degrees
+        # posY *= 20.0 / 115.0
         # print( "track %d %d\r\n" % (posX, posY) )
         if area > 50:
             if self.trackingOn == True:
@@ -225,22 +230,22 @@ class ArduinoRobot():
         elif c == "s":
             # Look straight ahead
             return self.Look( 0.0, 0.0 )	
-        elif c == "R" or c == "g":
+        elif c == "g":
             # Up key - Increase robot speed
             return self.Run( self.speed + 2, self.direction )
-        elif c == "T" or c == "b":
+        elif c == "b":
             # Down key - Decrease robot speed
             return self.Run( self.speed - 2, self.direction )
         elif c == "f":
-            # Up key - Increase robot speed
+            # Up key - Increase robot power
             return self.Power( self.power + 10 )
         elif c == "v":
-            # Down key - Decrease robot speed
+            # Down key - Decrease robot power
             return self.Power( self.power - 10 )
-        elif c == "S":
+        elif c == ".":
             # Right key - Turn robot to the right
             return self.Run( self.speed, self.direction + 0.02 )
-        elif c == "Q":
+        elif c == ",":
             # Left key - Turn robot to the left
             return self.Run( self.speed, self.direction - 0.02 )
         return True
