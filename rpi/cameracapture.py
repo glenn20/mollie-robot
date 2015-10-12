@@ -37,7 +37,7 @@ class CameraCapture( threading.Thread ):
         self.showpreview    = showpreview
         self.done           = False            # Flag to shutdown processing
         # Fill the inputqueue Image records - ready for capture
-        for i in range(10):
+        for i in range(4):
             self.inputqueue.put( imageprocessor.Image() )
         # Call the "run()" method in the new thread
         self.start()
