@@ -45,6 +45,10 @@ private:
     float    m_setspeed;                // The target speed for the wheel
     bool     m_setspeedp;		// Manage for constant speed?
     unsigned long m_tick;               // An internal loop counter
+    bool          m_startsequencep;
+    bool          m_started;
+    unsigned long m_starttime;
+    unsigned long m_startcount;
 };
 
 #endif // WHEEL_H
