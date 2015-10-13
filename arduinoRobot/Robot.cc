@@ -149,8 +149,7 @@ void Robot::dotrackingPID( int x, int y )
     //posY = robbie.head().angleY();
     posX = constrain(posX + OutputX, -90, 90);
     posY = constrain(posY - OutputY, -90, 90);
-    //Serial.print( "Camera direction: " );
-    //Serial.println( posX );
+    //Serial.print( "Camera direction: " ); Serial.println( posX );
     look( posX, posY );
     
     // Now, turn the body toward where the camera is looking
@@ -161,8 +160,7 @@ void Robot::dotrackingPID( int x, int y )
     //    return true;
     //}
     //int direction = constrain( Outputbody, -100, 100 );
-    //Serial.print( "Robot direction: " );
-    //Serial.println( direction );
+    //Serial.print( "Robot direction: " ); Serial.println( direction );
     //robbie.run( robbie.speed(), direction );
 }
 
@@ -190,8 +188,7 @@ bool Robot::robotcommand( char* line )
 	// look( anglex, angley );
 	dotrackingPID( numbers[0], numbers[1] );
     } else {
-	Serial.print( "Arduino: Unknown command: " );
-	Serial.println( line );
+	Serial.print( "Unknown robot command: " ); Serial.println( line );
     }
     return true;
 }
@@ -233,8 +230,7 @@ bool Robot::processjson( char *json )
     JsonObject& root = jsonBuffer.parseObject( json );
     
     if (!root.success()) {
-	Serial.print( "Processing Json: parseObject() failed:" );
-	Serial.println( json );
+	Serial.print( "Processing Json: parseObject() failed:" ); Serial.println( json );
 	return false;
     }
 
