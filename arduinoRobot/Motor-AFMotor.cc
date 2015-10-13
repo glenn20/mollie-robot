@@ -20,8 +20,9 @@ MotorAFMotor::MotorAFMotor( int motornum )
 // Initialise the 
 void MotorAFMotor::doinitialise()
 {
+    m_motor.run( m_forwardp ? FORWARD : BACKWARD );
     setpower( 0 );
-  
+ 
     Serial.print( "AFMotor::initialise: motornum = " );
     Serial.println( m_motornum );
 }
@@ -34,9 +35,9 @@ int MotorAFMotor::dosetpower( int power )
     if (m_forwardp != forwardp) {
 	// If we have changed direction - set the H-bridge direction control
 	m_forwardp = forwardp;
-	m_motor.run( (forwardp) ? FORWARD : BACKWARD );
+	m_motor.run( forwardp ? FORWARD : BACKWARD );
     }
-    m_motor.setSpeed( power );
+    m_motor.setSpeed( m_forwardp ? power : -power );
     // Serial.print( "AFMotor::dosetpower[" );
     // Serial.print( m_motornum );
     // Serial.print( "] = " );
