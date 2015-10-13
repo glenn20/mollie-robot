@@ -121,8 +121,9 @@ void rightEncoderISR() {robbie.rightwheel().encoder().update();}
 void SetupRobot()
 {
     // Initialise the I2C wire comms with the Raspberry Pi
-    int i2c_slave_address = 0x4;
-    SetupComms( i2c_slave_address );
+    //int i2c_slave_address = 0x4;
+    //SetupComms( i2c_slave_address );
+    SetupComms_serial();
 
     // Initialise the Robot motors
     robbie.initialise();
