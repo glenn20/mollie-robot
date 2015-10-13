@@ -16,13 +16,14 @@ class SerialMonitor( threading.Thread ):
         self.port       = serial.Serial( self.device, baudrate=baudrate, timeout=None )
         self.callback   = None
         self.done       = False
+        self.daemon     = True     # This thread may block on serial port
 
         # Opening the serial port resets the Arduino
         # - wait till it is ready
         s = ""
         while not s == "Robot ready\r\n":
             s = self.port.readline()
-            print ( "Arduino:", s )
+            print( "Arduino:", s, end="" )
         # Will call the run() method in a new thread...
         self.start()
 

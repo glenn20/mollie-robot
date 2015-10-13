@@ -66,7 +66,10 @@ class ArduinoRobot():
         self.arduino.setcallback( self.process_arduino_response )
 
     def process_arduino_response( self, s ):
-        self.robotstate.update( s )
+        if (s[0] == "{"):
+            self.robotstate.update( s )
+        else:
+            print( "Arduino: ", s, end="\r\n" )
 
     # Simple method to do range checking
     def _constrain( self, n, minn, maxn ):
