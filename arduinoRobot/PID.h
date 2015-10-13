@@ -7,8 +7,8 @@
 
 class MyPID {
 public:
-    MyPID( float Kp, float Kd, float Ki,
-	   float min, float max, int sampletime
+    MyPID( float Kp, float Ki, float Kd,
+	   float min, float max, int sampletime_ms
 	)
 	: m_actual( 0.0 ),
 	  m_target( 0.0 ),
@@ -20,7 +20,7 @@ public:
 	{
 	    m_pid.SetOutputLimits( min, max );
 	    m_pid.SetMode(AUTOMATIC);
-	    m_pid.SetSampleTime( sampletime );
+	    m_pid.SetSampleTime( sampletime_ms );
 	};
     
     bool UpdatePID( double  target,
@@ -29,6 +29,9 @@ public:
 	) {
 	m_actual  = actual;
 	m_target  = target;
+	if (output != NULL) {
+	    m_output  = *output;
+	}
 	if (m_pid.Compute()) {
 	    if (output != NULL) {
 		*output = m_output;
