@@ -101,6 +101,10 @@ void SetupComms( int i2c_slave_address )
 
 void SetupComms_serial( )
 {
+    // Flush any incoming data in the serial port
+    while (Serial.available()) {
+	Serial.read();          // Read the next character
+    }
 }
 
 
