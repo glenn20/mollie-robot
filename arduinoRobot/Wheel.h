@@ -9,6 +9,12 @@
 #include "Motor.h"
 #include "PID2.h"
 
+#define PID_NONE          0
+#define PID_STARTING      1
+#define PID_HIGHPOWER     2
+#define PID_LOWPOWER      3
+#define PID_PIDCONTROL    4
+
 // A "Wheel" is built from a DC motor controller ("Motor") and an "Encoder"
 class Wheel {
 public:
@@ -35,20 +41,16 @@ public:
     Encoder& encoder() { return m_encoder; };
     
 private:
-    int       updatePid( int power, float targetValue, float currentValue);
-
-private:
-    Motor&   m_motor;                   // The Motor controller
-    Encoder& m_encoder;                 // The Encoder controller
-    String   m_name;                    // A name for diagnostic printouts
-    MyPID2   pid;                       // The PID controller
-    float    m_setspeed;                // The target speed for the wheel
-    bool     m_setspeedp;		// Manage for constant speed?
+    Motor&        m_motor;              // The Motor controller
+    Encoder&      m_encoder;            // The Encoder controller
+    String        m_name;               // A name for diagnostic printouts
+    MyPID2        pid;                  // The PID controller
     unsigned long m_tick;               // An internal loop counter
-    bool          m_startsequencep;
-    bool          m_started;
+    float         m_setspeed;           // The target speed for the wheel
+    int           m_controlstate;
     unsigned long m_starttime;
     unsigned long m_startcount;
+    double        m_pidpower;
 };
 
 #endif // WHEEL_H

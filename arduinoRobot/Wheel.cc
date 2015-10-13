@@ -7,19 +7,17 @@ Wheel::Wheel(
     Encoder&    encoder,
     String      name
     ) :
-    m_motor		( motor ),
-    m_encoder		( encoder ),
-    m_name		( name ),
-    pid			( 0.2, 0.0, 0.0,
-			  -255, 255, 200 ),
-    m_setspeed		( 0.0 ),
-    m_setspeedp		( false ),
-    m_tick		( 0 ),
-    m_startsequencep	( false ),
-    m_started		( false ),
-    m_startedtime	( 0 ),
-    m_starttime		( 0 ),
-    m_startcount	( 0 )
+    m_motor	   ( motor ),
+    m_encoder	   ( encoder ),
+    m_name	   ( name ),
+    pid		   ( 0.2, 0.0, 0.0,
+		     -255, 255, 200 ),
+    m_tick	   ( 0 ),
+    m_setspeed	   ( 0.0 ),
+    m_controlstate ( PID_NONE ),
+    m_starttime	   ( 0 ),
+    m_startcount   ( 0 ),
+    m_pidpower     ( 0 )
 {
 }
 
@@ -41,16 +39,26 @@ void Wheel::disable()
 
 float Wheel::setspeed( float speed )
 {
+    if (-0.001 < speed && speed < 0.001) {
+	// If the requested speed is zero - just turn off the power and return
+	this->setpower( 0 );
+	return 0.0;
+    }
+    if (m_controlstate == PID_NONE) {
+	//Serial.print( "Controlstate0=" );
+	//Serial.println( m_controlstate );
+	m_controlstate = PID_STARTING;
+	//Serial.print( "ControlstateA=" );
+	//Serial.println( m_controlstate );
+    }
+    // Save the target speed - will be used by PID loop in Loop() below.
     m_setspeed = speed;
-    m_setspeedp = true;
-    // Loop();
 
     return m_setspeed;
 }
 
 float Wheel::setspeed()
 {
-    m_startsequencep = true
     return m_setspeed;
 }
 
@@ -61,9 +69,12 @@ float Wheel::speed()
 
 int Wheel::setpower( int power )
 {
-    m_startsequencep = false;
-    m_setspeedp = false;
-    m_setspeed = 0.0;
+    if (m_controlstate != PID_NONE) {
+	m_controlstate = PID_NONE;
+	m_setspeed     = 0.0;
+	//Serial.print( "ControlstateB=" );
+	//Serial.println( m_controlstate );
+    }
     return m_motor.setpower( power );
 }
 
@@ -74,100 +85,81 @@ float Wheel::power()
 
 void Wheel::stop()
 {
-    m_setspeedp      = false;
-    m_startsequencep = false;
-    m_motor.power();
+    this->setpower( 0 );
 }
 
 bool Wheel::Loop()
 {
-    if (!m_setspeedp || !m_encoder.valid()) {
+    if (m_controlstate == PID_NONE || !m_encoder.valid()) {
 	return false;
     }
-    int     mpower    = power();
-    float   mspeed    = speed();
-    // Encoder does not sense direction
-    // - use the motor power to guess direction
-    if (-0.001 < m_setspeed && m_setspeed < 0.001) {
-	// If the requested speed is zero - just turn off the power and return
-	if (mpower != 0) {
-	    m_motor.setpower( 0 );
-	    return true;
-	}
-	return false;
-    }
-    // If the actual speed is zero, start the startup sequence...
-    unsigned long t = millis();
-    unsigned long counts = m_encoder.count();
-    bool stationary = (-0.001 < mspeed && mspeed < 0.001);
-    if (stationary && !m_startsequencep) {
+    bool updated = false;
+    double correction = 0.0;
+    switch (m_controlstate) {
+    case PID_NONE:
+	break;
+    case PID_STARTING:
 	// We are starting the wheels from rest - start the startup sequence
-	m_startsequencep = true;
+	m_controlstate   = PID_HIGHPOWER;
+	//Serial.print( "ControlstateC=" );
+	//Serial.println( m_controlstate );
 	m_starttime      = millis();
 	m_startcount     = m_encoder.count();
-	m_motor.setpower( 160 );
-	Serial.print( "Startsequence=true: " );
-	Serial.println( m_name );
-    }
-    if (m_startsequencep) {
-	if (!(counts > m_startcount)) {
+	m_motor.setpower( 200 );
+	updated = true;
+	break;
+    case PID_HIGHPOWER:
+	if (!(m_encoder.count() > m_startcount)) {
 	    // First the high power - ramp up phase
 	    // Keep ramping up power till the motors start moving 
-	    m_motor.setpower( 160 + (t - m_starttime) * 0.01 );
-	    return true;
+	    //m_motor.setpower( 160 + (millis() - m_starttime) * 0.01 );
+	    //updated = true;
 	} else {
-	    // Next, the low power phase
-	    if (!m_started) {
-		// Once the wheels start moving, reduce power
-		m_started = true;
-		m_startedtime = t;
-		m_motor.setpower( mpower - 60 );
-		return true;
-	    }
-	    // ...after that - do nothing until we register non-zero speed
-	}
-	if (!stationary) {
 	    // The wheels are moving at speed - stop the start sequence
-	    if (!m_started) {
-		// If we haven't switched to low power mode - do that now
-		m_started = true;
-		m_startedtime = t;
-		m_motor.setpower( mpower - 60 );
-		return true;
-	    }
+	    m_controlstate = PID_LOWPOWER;
+	    m_motor.setpower( 100 );
+	    updated = true;
+	    //Serial.print( "ControlstateD=" );
+	    //Serial.println( m_controlstate );
 	}
-	if (m_started) {
-	    // End the start sequence phase
-	    if (t - m_startedtime > 10000) {
-		// Allow time for speed to settle down before start PID
-		m_startsequencep = false;
-		Serial.print( "Startsequence=false: " );
-		Serial.println( m_name );
-		// Initialise the output power settings for the PID controller
-		m_pidpower = power();
-	    }
-	    return false;
+	break;
+    case PID_LOWPOWER:
+	// End the start sequence phase
+	if (millis() - m_starttime > 10000) {
+	    // Allow time for speed to settle down before start PID
+	    m_controlstate = PID_PIDCONTROL;
+	    // Initialise the output power settings for the PID controller
+	    m_pidpower = this->power();
+	    //Serial.print( "ControlstateE=" );
+	    //Serial.println( m_controlstate );
 	}
-    } else if (m_pidcontrolp) {
-	// End of the start sequence...
-	if (pid.UpdatePID( (double)m_setspeed, (double)mspeed, &m_pidpower )) {
-	    double p = m_pidpower;
-	    if (m_setspeed > 0.0) {
-		p = ((p <    0) ?   0 :
-		     ((p > 255) ? 255 :
-		      p ));
-	    } else {
-		p = ((p >     0) ?    0 :
-		     ((p < -255) ? -255 :
-		      p ));
-	    }
-	    m_pidpower = p;
+	break;
+    case PID_PIDCONTROL:
+	// Run PID control
+	if (pid.UpdatePID( (double)m_setspeed,
+			   (double)this->speed(),
+			   &correction )) {
+	    m_pidpower += correction;
+	    // double p = m_pidpower;
+	    // if (m_setspeed > 0.0) {
+	    // 	p = ((p <    0) ?   0 :
+	    // 	     ((p > 255) ? 255 :
+	    // 	      p ));
+	    // } else {
+	    // 	p = ((p >     0) ?    0 :
+	    // 	     ((p < -255) ? -255 :
+	    // 	      p ));
+	    // }
+	    // m_pidpower = p;
 	    m_motor.setpower( (int) m_pidpower );
-	    return true;
+	    updated = true;
 	}
+	break;
+    default:
+	break;
     }
-
-    return false;
+ 
+    return updated;
 }
 
 // Local Variables:
