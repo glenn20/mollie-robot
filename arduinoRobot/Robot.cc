@@ -16,7 +16,7 @@ Robot::Robot( Wheel&       leftwheel,
     :         m_leftwheel  ( leftwheel ),
 	      m_rightwheel ( rightwheel ),
 	      m_head       ( head ),
-	      m_tick       ( 0 )
+	      m_updated    ( false )
 {
 }
 
@@ -25,6 +25,14 @@ void Robot::initialise()
     m_leftwheel.initialise();
     m_rightwheel.initialise();
     m_head.initialise();
+    m_updated = true;
+}
+
+void Robot::close()
+{
+    m_leftwheel.close();
+    m_rightwheel.close();
+    m_head.close();
 }
 
 void Robot::enable()
@@ -58,6 +66,7 @@ bool Robot::setpower( int left, int right )
 {
     m_leftwheel.setpower( left );
     m_rightwheel.setpower( right );
+    m_updated = true;
 
     return true;
 }
@@ -66,6 +75,7 @@ bool Robot::run( int left, int right )
 {
     m_leftwheel.run( left );
     m_rightwheel.run( right );
+    m_updated = true;
 
     return true;
 }
@@ -73,21 +83,26 @@ bool Robot::run( int left, int right )
 void Robot::look( float angleX, float angleY )
 {
     m_head.look( angleX, angleY );
+    m_updated = true;
 }
 
 void Robot::look( float angleX )
 {
     m_head.look( angleX );
+    m_updated = true;
 }
 
 bool Robot::Loop()
 {
-    m_leftwheel.Loop();
-    m_rightwheel.Loop();
+    if (m_leftwheel.Loop()) {
+	m_updated = true;
+    }
+    if (m_rightwheel.Loop()) {
+	m_updated = true;
+    }
 
-    m_tick++;
-    if (m_tick > 2000) {
-	m_tick = 0;
+    if (m_updated) {
+	m_updated = false;
 	sendjson();
     }
 
@@ -155,7 +170,7 @@ void Robot::dotrackingPID( int x, int y )
     // Now, turn the body toward where the camera is looking
     //Inputbody = posX;
     //myPIDbody.Compute();
-    
+
     //if (-5.0 < Outputbody && Outputbody < 5.0) {
     //    return true;
     //}
@@ -217,6 +232,10 @@ void Robot::sendjson()
     data = &root.createNestedArray("counts");
     data->add( m_leftwheel .encoder().count() );
     data->add( m_rightwheel.encoder().count() );
+    data = &root.createNestedArray("pid");
+    data->add( m_leftwheel.pid().Kp() );
+    data->add( m_leftwheel.pid().Ki() );
+    data->add( m_leftwheel.pid().Kd() );
 
     root.printTo( Serial );
     Serial.println();
@@ -239,11 +258,19 @@ bool Robot::processjson( char *json )
 	strncpy( k, it->key, 100 );
 	String key = k;
 	if (key == "head") {
-	    m_head.look( (it->value)[0], (it->value)[1] );
+	    look( (it->value)[0], (it->value)[1] );
 	} else if (key == "setspeed") {
 	    run( (it->value)[0], (it->value)[1] );
 	} else if (key == "power") {
 	    setpower( (it->value)[0], (it->value)[1] );
+	} else if (key == "pid") {
+	    m_leftwheel .pid().setPID( (it->value)[0],
+				       (it->value)[1],
+				       (it->value)[2] );
+	    m_rightwheel.pid().setPID( (it->value)[0],
+				       (it->value)[1],
+				       (it->value)[2] );
+	    m_updated = true;
 	} // Silently ignore any other json keys - for now
     }
 

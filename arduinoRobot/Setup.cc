@@ -40,13 +40,11 @@ void rightEncoderISR();
 // Start assembling Robbie the robot from the ground up...
 Encoder leftencoder (		// Left wheel encoder
     2,				//   Arduino input pin for the encoder signal
-    0,				//   Arduino interrupt number to generate
     leftEncoderISR		//   Interrupt service routine for this encoder
     );
 
 Encoder rightencoder(		// Right wheel encoder
     3,				//   Arduino input pin for the encoder signal
-    1,				//   Arduino interrupt number to generate
     rightEncoderISR		//   Interrupt service routine for this encoder
     );
 
@@ -77,18 +75,44 @@ MotorMollie rightmotor(		// Right wheel DC motor controller
     );
 #endif
 
-Wheel leftwheel   (		// Left wheel DC motor and encoder
+// Construct a PID controller for the left Wheel
+MyPID leftpid(
+    0.3,			// Kp
+    0.0,			// Ki
+    0.0,			// Kd
+    -255,			// Min output range
+    255,			// Max output range
+    200				// Milliseconds between re-computation and update
+    );
+
+// Construct a PID controller for the left Wheel
+MyPID rightpid(
+    0.3,			// Kp
+    0.0,			// Ki
+    0.0,			// Kd
+    -255,			// Min output range
+    255,			// Max output range
+    200				// Milliseconds between re-computation and update
+    );
+
+// Construct the left "Wheel" from a Motor, an Encoder and a PID controller...
+Wheel leftwheel   (
     leftmotor,
     leftencoder,
+    leftpid,
     "Leftwheel"
     );
 
-Wheel rightwheel  (		// Right wheel DC motor and encoder
+// Construct the right "Wheel" from a Motor, an Encoder and a PID controller...
+Wheel rightwheel  (
     rightmotor,
     rightencoder,
+    rightpid,
     "Rightwheel"
     );
 
+// Construct the servo motor controllers for the robot's head
+// HeadX turns head left and right
 HeadServo headX (
     10,				// Arduino PWM pin for the rotation servo
     68,				//   origin: Servo setting for straight ahead
@@ -96,27 +120,69 @@ HeadServo headX (
     116				//   max: Maximum servo setting
     );
 
+// HeadY tilts head up and down
 HeadServo headY (
     9,				// Arduino PWM pin for the rotation servo
     54,				//   origin: Servo setting for straight ahead
     24,				//   min: Minimum servo setting
     106				//   max: Maximum servo setting
     );
-  
-Head  head        (		// The Robot head is built from two Servos
+
+// Construct the Head controller from the two servo controllers
+Head  head        (
     headX,			//   The horizontal rotation servo, and...
     headY			//   The vertical rotation servo
     );
 
-Robot robbie      (		// Robbie the robot is built from...
+// Robbie the Robot is built from a left Wheel, a right Wheel and a Head
+Robot robbie      (
     leftwheel,			//   A Left wheel,
     rightwheel,			//   A Right wheel and...
     head			//   A Head made of servos.
     );
 
+// How to construct robbie in one statement...
+// Robot robbie2 (
+//     new Wheel(
+// 	MotorAFMotor(		// Left wheel DC motor controller
+// 	    3			//   Left wheel attached to Motor 3
+// 	    ),
+// 	Encoder(		// Left wheel encoder
+// 	    2,			//   Arduino input pin for the encoder signal
+// 	    leftEncoderISR	//   Interrupt service routine for this encoder
+// 	    ),
+// 	"Leftwheel"
+// 	),
+//     Wheel(
+// 	MotorAFMotor(		// Left wheel DC motor controller
+// 	    4			//   Right wheel attached to Motor 4
+// 	    ),
+// 	Encoder(		// Right wheel encoder
+// 	    3,			//   Arduino input pin for the encoder signal
+// 	    rightEncoderISR	//   Interrupt service routine for this encoder
+// 	    ),
+// 	"Rightwheel"
+// 	),
+//     Head(
+// 	HeadServo(
+// 	    10,			// Arduino PWM pin for the rotation servo
+// 	    68,			//   origin: Servo setting for straight ahead
+// 	    18,			//   min: Minimum servo setting
+// 	    116			//   max: Maximum servo setting
+// 	    ),			//   The horizontal rotation servo, and...
+// 	HeadServo(
+// 	    9,			// Arduino PWM pin for the rotation servo
+// 	    54,			//   origin: Servo setting for straight ahead
+// 	    24,			//   min: Minimum servo setting
+// 	    106			//   max: Maximum servo setting
+// 	    )			//   The vertical rotation servo
+// 	)
+//     );
+
+
 // Load the interrupt service routines for the left and right wheel encoders
-void leftEncoderISR()  {robbie.leftwheel().encoder().update(); }
-void rightEncoderISR() {robbie.rightwheel().encoder().update();}
+void leftEncoderISR()  {robbie.leftwheel ().encoder().update(); }
+void rightEncoderISR() {robbie.rightwheel().encoder().update(); }
 
 void SetupRobot()
 {

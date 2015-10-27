@@ -22,6 +22,7 @@ public:
     void     look( float angleX );
 
     void     initialise();
+    void     close();
     void     enable();
     void     disable();
     int      leftspeed();
@@ -44,7 +45,7 @@ private:
     Wheel&   m_leftwheel;
     Wheel&   m_rightwheel;
     Head&    m_head;
-    unsigned long m_tick;               // An internal loop counter
+    bool     m_updated;
 };
 
 

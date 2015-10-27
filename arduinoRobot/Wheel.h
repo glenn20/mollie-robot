@@ -7,7 +7,7 @@
 
 #include "Encoder.h"
 #include "Motor.h"
-#include "PID2.h"
+#include "PID.h"
 
 #define PID_NONE          0
 #define PID_STARTING      1
@@ -21,10 +21,12 @@ public:
     Wheel(
 	Motor&      motor,
 	Encoder&    encoder,
+	MyPID&      pid,
 	String      name = "Wheel"
 	);
 
     void     initialise();
+    void     close();
     void     enable();                  // Enable the wheel motor
     void     disable();                 // Disable the wheel motor
     float    setspeed( float speed );   // Set the target speed (in RPM)
@@ -39,12 +41,13 @@ public:
 
     Motor&   motor()   { return m_motor;   };
     Encoder& encoder() { return m_encoder; };
+    MyPID&   pid()     { return m_pid;     };
     
 private:
     Motor&        m_motor;              // The Motor controller
     Encoder&      m_encoder;            // The Encoder controller
+    MyPID&        m_pid;                // The PID controller
     String        m_name;               // A name for diagnostic printouts
-    MyPID2        pid;                  // The PID controller
     unsigned long m_tick;               // An internal loop counter
     float         m_setspeed;           // The target speed for the wheel
     int           m_controlstate;

@@ -17,7 +17,7 @@ MotorAFMotor::MotorAFMotor( int motornum )
 {
 }
 
-// Initialise the 
+// Initialise the motor
 void MotorAFMotor::doinitialise()
 {
     m_motor.run( m_forwardp ? FORWARD : BACKWARD );

@@ -5,13 +5,13 @@
 Wheel::Wheel(
     Motor&      motor,
     Encoder&    encoder,
+    MyPID&      pid,
     String      name
     ) :
     m_motor	   ( motor ),
     m_encoder	   ( encoder ),
+    m_pid          ( pid ),
     m_name	   ( name ),
-    pid		   ( 0.2, 0.0, 0.0,
-		     -255, 255, 200 ),
     m_tick	   ( 0 ),
     m_setspeed	   ( 0.0 ),
     m_controlstate ( PID_NONE ),
@@ -25,6 +25,12 @@ void Wheel::initialise()
 {
     m_motor.initialise();
     m_encoder.initialise();
+}
+
+void Wheel::close()
+{
+    m_motor.close();
+    m_encoder.close();
 }
 
 void Wheel::enable()
@@ -90,11 +96,10 @@ void Wheel::stop()
 
 bool Wheel::Loop()
 {
-    if (m_controlstate == PID_NONE || !m_encoder.valid()) {
+    if (!m_encoder.valid()) {
 	return false;
     }
     bool updated = false;
-    double correction = 0.0;
     switch (m_controlstate) {
     case PID_NONE:
 	break;
@@ -105,7 +110,7 @@ bool Wheel::Loop()
 	//Serial.println( m_controlstate );
 	m_starttime      = millis();
 	m_startcount     = m_encoder.count();
-	m_motor.setpower( 200 );
+	m_motor.setpower( 250 );
 	updated = true;
 	break;
     case PID_HIGHPOWER:
@@ -117,7 +122,7 @@ bool Wheel::Loop()
 	} else {
 	    // The wheels are moving at speed - stop the start sequence
 	    m_controlstate = PID_LOWPOWER;
-	    m_motor.setpower( 100 );
+	    m_motor.setpower( 180 );
 	    updated = true;
 	    //Serial.print( "ControlstateD=" );
 	    //Serial.println( m_controlstate );
@@ -136,10 +141,9 @@ bool Wheel::Loop()
 	break;
     case PID_PIDCONTROL:
 	// Run PID control
-	if (pid.UpdatePID( (double)m_setspeed,
-			   (double)this->speed(),
-			   &correction )) {
-	    m_pidpower += correction;
+	if (m_pid.UpdatePID( m_setspeed,
+			     this->speed())) {
+	    m_pidpower += m_pid.output();
 	    // double p = m_pidpower;
 	    // if (m_setspeed > 0.0) {
 	    // 	p = ((p <    0) ?   0 :
@@ -158,7 +162,16 @@ bool Wheel::Loop()
     default:
 	break;
     }
- 
+
+    // Every 500 milliseconds, set updated if wheel speed is non-zero
+    // So that we report counts, speed regularly while moving
+    if (!updated && (millis() % 500 == 0)) {
+	float s = speed();
+	if (s < -0.1 || 0.1 < s) {
+	    updated = true;
+	}
+    }
+
     return updated;
 }
 

@@ -14,6 +14,9 @@ public:
     void  initialise() {
 	doinitialise();
     };
+    void  close() {
+	setpower( 0 );
+    };
     int   setpower( int power ) { // Set the motor power
 	if (power == m_power) {
 	    return power;
