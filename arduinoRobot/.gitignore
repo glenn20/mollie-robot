@@ -5,6 +5,9 @@ build-*
 *.py[cod]
 *~
 
+#*
+.#*
+
 # C extensions
 *.so
 

@@ -5,17 +5,16 @@
 #include "Encoder.h"
 
 Encoder::Encoder( int   controlpin,
-		  int   interruptnumber,
 		  void  (*interruptfunction)()
     )
     : m_controlpin        ( controlpin ),
-      m_interruptnumber   ( interruptnumber ),
       m_interruptfunction ( interruptfunction ),
       m_count             ( 0 ),
       m_lasttime          ( 0 ),
       m_ndx               ( 0 ),
       m_npulses           ( 0 ),
-      m_ntime             ( 0 )
+      m_ntime             ( 0 ),
+      m_reset		  ( false )
 {
 }
 
@@ -26,13 +25,20 @@ void Encoder::initialise()
 	digitalWrite( m_controlpin, 1 );
     
 	// Set the encoder interrupts to call the interruptfunction
-	attachInterrupt( m_interruptnumber,
+	attachInterrupt( digitalPinToInterrupt( m_controlpin ),
 			 m_interruptfunction,
 			 CHANGE );
 	Serial.print( "Encoder::initialise: controlpin=" );
 	Serial.print( m_controlpin );
 	Serial.print( " interrupt=" );
-	Serial.println( m_interruptnumber );
+	Serial.println( digitalPinToInterrupt( m_controlpin ) );
+    }
+}
+
+void Encoder::close()
+{
+    if (m_controlpin >= 0) {
+	detachInterrupt( digitalPinToInterrupt( m_controlpin ) );
     }
 }
 
@@ -63,7 +69,8 @@ void Encoder::update()
 {
     unsigned long t = micros();
     // If more than 0.5 seconds since last pulse, reset the counters
-    if ((t - m_lasttime) > 500000) {
+    if (m_reset) {
+	m_reset     = false;
 	m_ntime     = 0;
 	m_ndx       = 0;
 	m_npulses   = 0;
@@ -87,6 +94,11 @@ void Encoder::update()
 float Encoder::speed()
 {
     if (!valid()) {
+	return 0.0;
+    }
+    // If more than 0.5 seconds since last pulse, reset the counters
+    if ((micros() - m_lasttime) > 500000) {
+	m_reset = true;
 	return 0.0;
     }
     // No pulses have been recorded - just return a speed of zero
