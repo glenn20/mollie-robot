@@ -153,7 +153,7 @@ class TrackingRobot():
         self.tracker.close()
         self.robot.close()
         s = time.time()
-        while threading.active_count() > 1:
+        while threading.active_count() > 2:
             t = time.time()
             if (t - s > 5):
                 # If we have bean waiting more than five seconds print out the threads
