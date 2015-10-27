@@ -6,63 +6,67 @@
 class MyPID2 {
 public:
     MyPID2(
-	float Kp	    = 0.0,	// Scale factor to apply
-	float Ki            = 0.0,	// PID proportionality constant
-	float Kd            = 0.0,	// PID derivative constant
-	float min           = -255,
-	float max           =  255,
-	int   sampletime_ms = 100	// Update period - in seconds
-	) : m_Kp        ( Kp ),
-	    m_Ki        ( Ki ),
-	    m_Kd        ( Kd ),
-	    m_min       ( min ),
-	    m_max       ( max ),
-	    m_lasterror ( 0 ),
-	    m_sampletime_ms( sampletime_ms ),
-	    m_lastupdatetime( 0 )
+	double Kp, double Ki, double Kd,
+	double min = 0, double max = 255, int sampletime_ms = 100
+	)
+	: m_output    ( 0.0 ),
+	  m_Kp        ( Kp ),
+	  m_Ki        ( Ki ),
+	  m_Kd        ( Kd ),
+	  m_min       ( min ),
+	  m_max       ( max ),
+	  m_lasterror ( 0 ),
+	  m_sampletime_ms( sampletime_ms ),
+	  m_lastupdatetime( 0 )
 	{
 	};
 
     bool UpdatePID(
-	double   targetValue,
-	double   currentValue,
-	double*  output
-	)
-	{
-	    int t = millis();
-	    if (t - m_lastupdatetime >= m_sampletime_ms) {
-		m_lastupdatetime = t;
-		double error  = targetValue - currentValue; 
-		double x      = ((m_Kp * error) +
-				 (m_Kd * (error - m_lasterror)));
-		m_lasterror   = error;
-		x = (x < m_min ? m_min :
-		     x > m_max ? m_max :
-		     x);
-		*output = x;
-		return true;
-	    }
-	    return false;
-	};
+	double   target,
+	double   actual
+	) {
+	int t = millis();
+	if (t - m_lastupdatetime >= m_sampletime_ms) {
+	    m_lastupdatetime = t;
+	    double error  = target - actual; 
+	    double x      = ((m_Kp * error) +
+			     (m_Kd * (error - m_lasterror)));
+	    m_lasterror   = error;
+	    x = (x < m_min ? m_min :
+		 x > m_max ? m_max :
+		 x);
+	    m_output = x;
+	    return true;
+	}
+	return false;
+    };
+    
+    double output() {
+	return m_output;
+    };
 
-    void setKp( float Kp ) { m_Kp = Kp; };
-    void setKi( float Ki ) { m_Ki = Ki; };
-    void setKd( float Kd ) { m_Kd = Kd; };
-    void setK( float Kp, float Ki, float Kd ) { setKp( Kp ); setKi( Ki ); setKd( Kd ); };
+    void setoutput( double output ) {
+	m_output = output;
+    }
 
-    float Kp() { return m_Kp; };
-    float Ki() { return m_Ki; };
-    float Kd() { return m_Kd; };
+    void setPID( double Kp, double Ki, double Kd ) {
+	m_Kp = Kp; m_Ki = Ki; m_Kd = Kd;
+    };
+
+    double Kp() { return m_Kp; };
+    double Ki() { return m_Ki; };
+    double Kd() { return m_Kd; };
 
     void reset() { m_lasterror = 0.0; };
 
 private:
-    float    m_Kp;			// PID proportionality constant
-    float    m_Ki;
-    float    m_Kd;			// PID derivative constant
-    float    m_min;
-    float    m_max;
-    float    m_lasterror;		// Save the last error - for next PID
+    double    m_output;
+    double    m_Kp;			// PID proportionality constant
+    double    m_Ki;
+    double    m_Kd;			// PID derivative constant
+    double    m_min;
+    double    m_max;
+    double    m_lasterror;		// Save the last error - for next PID
     unsigned long m_sampletime_ms;	// PID update time in milliseconds
     unsigned long m_lastupdatetime;
 };
