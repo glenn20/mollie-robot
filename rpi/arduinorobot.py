@@ -6,21 +6,52 @@ Classes:
 """
 
 from __future__ import print_function
+import itertools
 import time
 import json
+
+datafile = open( "./robbie.csv", "w", 1 )
 
 class RobotState:
     def __init__( self ):
         self.time       = 0
         self.head       = [0,0]
         self.setspeed   = [0,0]
+        self.speed      = [0,0]
+        self.counts     = [0,0]
         self.power      = [0,0]
+        self.pid        = [0.2, 0.0, 0.0 ]
 
     def update( self, s ):
         d = json.loads( s )
         self.__dict__.update( d )
-        print( "Robot =", self.__dict__, end="\r\n" )
+        if (time.time() % 5) < 1:
+            print( "Robot =", self.__dict__, end="\r\n" )
         return d
+
+    def listofvalues( self ):
+        return list(
+            itertools.chain(
+                [self.time],
+                self.head,
+                self.setspeed,
+                self.speed,
+                self.counts,
+                self.power,
+                self.pid
+            )
+        )
+    
+    def listofkeys( self ):
+        return list(
+            "time",
+            "headX", "headY",
+            "setspeedL", "setspeedR",
+            "speedL", "speedR",
+            "countsL", "countsR",
+            "powerL", "powerR",
+            "Kp", "Ki", "Kd"
+        )
 
     def state( self, d ):
         s = json.dumps( d, separators=(',',':') )
@@ -28,6 +59,9 @@ class RobotState:
         self.time = time.time()
         print( "Target=", self.__dict__, end="\r\n" )
         return s
+
+    def json( self ):
+        return json.dumps( self.__dict__, separators=(',',':') )
 
 # Construct robots with a comms object
 # Just requires a "send" method to send commands to the arduino
@@ -63,11 +97,17 @@ class ArduinoRobot():
         self.arduino    = arduinoComms
         self.targetstate= RobotState()
         self.robotstate = RobotState()
+        self.datafile   = open( "./robbie.csv", "w", 1 )
+
+        # First line of the data file is the name of the data fields
+        print( *self.robotstate.listofkeys(), sep=',', file=self.datafile )
         self.arduino.setcallback( self.process_arduino_response )
 
     def process_arduino_response( self, s ):
         if (s[0] == "{"):
             self.robotstate.update( s )
+            # Save the robotstate in the data logging file
+            print( *self.robotstate.listofvalues(), sep=',', file=datafile )
         else:
             print( "Arduino: ", s, end="\r\n" )
 
@@ -161,6 +201,16 @@ class ArduinoRobot():
             self.targetstate.state( {"head": [ self.angleX, self.angleY]} )
         )
 
+    def PID( self, deltaKp, deltaKi, deltaKd ):
+        """
+        Adjust the PID parameters for the PID control on the motor wheels.
+        """
+        return self.send(
+            self.pidstate.state( {"pid": [self.targetstate.pid[0] + deltaKp,
+                                          self.targetstate.pid[1] + deltaKi,
+                                          self.targetstate.pid[2] + deltaKd ]} )
+        )
+
     # Tell the robot to track to the given angles
     def Track( self, x, y ):
         """
@@ -196,6 +246,7 @@ class ArduinoRobot():
             # If we lost the object - tell the robot to go straight
             if self.direction != 0 and self.speed != 0:
                 return self.Run( self.speed, 0 )
+
     
     # Process any key presses - return False if time to quit
     def RemoteControl( self, c ):
@@ -251,6 +302,24 @@ class ArduinoRobot():
         elif c == ",":
             # Left key - Turn robot to the left
             return self.Run( self.speed, self.direction - 0.02 )
+        elif c == "u":
+            # Increment Kp
+            return self.PID(  0.1,  0.0,  0.0 )
+        elif c == "j":
+            # Decrement Kp
+            return self.PID( -0.1,  0.0,  0.0 )
+        elif c == "i":
+            # Increment Ki
+            return self.PID(  0.0,  0.1,  0.0 )
+        elif c == "k":
+            # Decrement Ki
+            return self.PID(  0.0, -0.1,  0.0 )
+        elif c == "o":
+            # Increment Kd
+            return self.PID(  0.0,  0.0,  0.1 )
+        elif c == "l":
+            # Decrement Kd
+            return self.PID(  0.0,  0.0, -0.1 )
         return True
 
     def close( self ):
@@ -259,3 +328,4 @@ class ArduinoRobot():
         """
         print( "Closing down the robot..." )
         self.arduino.close()
+        datafile.close()
