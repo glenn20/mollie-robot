@@ -17,6 +17,7 @@ public:
 	);
 
     void  initialise();
+    void  close();
     float setangle( float angle );
     float angle();
 
@@ -43,6 +44,7 @@ public:
 	);
 
     void     initialise();
+    void     close();
     float    lookX( float angleX );  // Turn head to the given angle
     float    lookY( float angleY );  // Turn head to the given angle
     float    angleX();               // Get the current head turn angle

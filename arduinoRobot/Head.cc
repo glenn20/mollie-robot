@@ -29,6 +29,14 @@ void HeadServo::initialise()
     Serial.println( m_servopin );
 }
 
+void HeadServo::close()
+{
+    setangle( 0.0 );
+    if (m_servopin > 0) {
+	m_servo.detach();
+    }
+}
+
 static int round_int( float r ) {
     return (r > 0.0) ? (r + 0.5) : (r - 0.5); 
 }
@@ -64,6 +72,12 @@ void Head::initialise()
 {
     m_servoX.initialise();
     m_servoY.initialise();
+}
+
+void Head::close()
+{
+    m_servoX.close();
+    m_servoY.close();
 }
 
 float Head::lookX( float angle )
