@@ -115,10 +115,13 @@ class TrackingRobot():
         # Start the Camera capture - will run in it's own thread.
         # Captured images will be placed on processingqueue
         # to be processed by self.workflow.
-        self.capture = cameracapture.CameraCapture( self.camera,
-                                                    self.cameraqueue,
-                                                    self.processingqueue,
-                                                    self.showpreview )
+        self.capture = cameracapture.CameraCapture(
+            self.camera,
+            self.cameraqueue,
+            self.processingqueue,
+            self.showpreview
+        ) if self.camera is not None else None
+
         # Diagnostic: Print all the threads we have started. 
         for t in threading.enumerate():
             print( t )
@@ -148,10 +151,11 @@ class TrackingRobot():
         Close down the robot controller and object tracking components. 
         """
         print( "Closing down robbie..." )
-        self.capture.close()
+        self.robot.close()
+        if self.capture is not None:
+            self.capture.close()
         self.workflow.close()
         self.tracker.close()
-        self.robot.close()
         s = time.time()
         while threading.active_count() > 2:
             t = time.time()

@@ -10,7 +10,6 @@ import itertools
 import time
 import json
 
-datafile = open( "./robbie.csv", "w", 1 )
 
 class RobotState:
     def __init__( self ):
@@ -25,8 +24,7 @@ class RobotState:
     def update( self, s ):
         d = json.loads( s )
         self.__dict__.update( d )
-        if (time.time() % 5) < 1:
-            print( "Robot =", self.__dict__, end="\r\n" )
+        # print( "Robot =", self.__dict__, end="\r\n" )
         return d
 
     def listofvalues( self ):
@@ -43,7 +41,7 @@ class RobotState:
         )
     
     def listofkeys( self ):
-        return list(
+        return [
             "time",
             "headX", "headY",
             "setspeedL", "setspeedR",
@@ -51,13 +49,13 @@ class RobotState:
             "countsL", "countsR",
             "powerL", "powerR",
             "Kp", "Ki", "Kd"
-        )
+        ]
 
     def state( self, d ):
         s = json.dumps( d, separators=(',',':') )
         self.__dict__.update( d )
         self.time = time.time()
-        print( "Target=", self.__dict__, end="\r\n" )
+        # print( "Target=", self.__dict__, end="\r\n" )
         return s
 
     def json( self ):
@@ -100,14 +98,16 @@ class ArduinoRobot():
         self.datafile   = open( "./robbie.csv", "w", 1 )
 
         # First line of the data file is the name of the data fields
-        print( *self.robotstate.listofkeys(), sep=',', file=self.datafile )
+        print( *self.robotstate.listofkeys(), sep=',',
+               file=self.datafile )
         self.arduino.setcallback( self.process_arduino_response )
 
     def process_arduino_response( self, s ):
         if (s[0] == "{"):
             self.robotstate.update( s )
             # Save the robotstate in the data logging file
-            print( *self.robotstate.listofvalues(), sep=',', file=datafile )
+            print( *self.robotstate.listofvalues(), sep=',',
+                   file=self.datafile )
         else:
             print( "Arduino: ", s, end="\r\n" )
 
@@ -198,7 +198,9 @@ class ArduinoRobot():
         if angleY > -1000:
             self.angleY = self._constrain( angleY, -90, 90 )
         return self.send(
-            self.targetstate.state( {"head": [ self.angleX, self.angleY]} )
+            self.targetstate.state(
+                {"head": [ self.angleX, self.angleY]}
+            )
         )
 
     def PID( self, deltaKp, deltaKi, deltaKd ):
@@ -206,9 +208,11 @@ class ArduinoRobot():
         Adjust the PID parameters for the PID control on the motor wheels.
         """
         return self.send(
-            self.pidstate.state( {"pid": [self.targetstate.pid[0] + deltaKp,
-                                          self.targetstate.pid[1] + deltaKi,
-                                          self.targetstate.pid[2] + deltaKd ]} )
+            self.targetstate.state(
+                {"pid": [self.targetstate.pid[0] + deltaKp,
+                         self.targetstate.pid[1] + deltaKi,
+                         self.targetstate.pid[2] + deltaKd ]}
+            )
         )
 
     # Tell the robot to track to the given angles
@@ -328,4 +332,4 @@ class ArduinoRobot():
         """
         print( "Closing down the robot..." )
         self.arduino.close()
-        datafile.close()
+        self.datafile.close()

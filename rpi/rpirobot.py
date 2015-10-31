@@ -63,17 +63,19 @@ tracker = colourtracker.ColourTracker(
     )
 
 # Setup the Raspberry Pi camera
-resolution = (320, 240)
-camera = picamera.PiCamera()
-camera.preview_fullscreen = False
-camera.preview_window     = (100, 100, resolution[0], resolution[1])
-camera.resolution         = resolution
-camera.framerate          = 10
-# camera.exposure_mode    = 'off'
-camera.iso                = 800
-camera.image_effect       = 'blur'
-camera.awb_mode           = 'off' # 'fluorescent'
-camera.awb_gains          = (1.2,1.2)
+camera = None
+if not args.nocamera:
+    camera = picamera.PiCamera()
+    resolution = (320, 240)
+    camera.preview_fullscreen = False
+    camera.preview_window     = (100, 100, resolution[0], resolution[1])
+    camera.resolution         = resolution
+    camera.framerate          = 10
+    # camera.exposure_mode    = 'off'
+    camera.iso                = 800
+    camera.image_effect       = 'blur'
+    camera.awb_mode           = 'off' # 'fluorescent'
+    camera.awb_gains          = (1.2,1.2)
 
 # Connect to and initialise the arduino robot
 robot.Initialise()
