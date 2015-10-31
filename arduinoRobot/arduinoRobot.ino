@@ -17,18 +17,19 @@ void setup()
 void loop()
 {
     static int  tick       = 0;
-    static bool ledstate   = false;
     // Flash the LED several times per second for the first 5 seconds.
-    static int  halfperiod = 100;
+    static int  onperiod = 100;
+    static int  longperiod = 200;
 
     if (tick == 5000) {
 	// After 5 seconds flash the LED slowly.
 	// This is useful to check the arduino has not crashed.
-	halfperiod = 1000;
+	longperiod = 5000;
     }
-    if (tick % halfperiod == 0) {
-	ledstate = ! ledstate;
-	digitalWrite( LED_PIN, (ledstate ? HIGH : LOW) ); // Flash the LED
+    if (tick % longperiod == 0) {
+	digitalWrite( LED_PIN, HIGH ); // Flash the LED
+    } else if (tick % onperiod == 0) {
+	digitalWrite( LED_PIN, LOW ); // Flash the LED
     }
 
     LoopRobot();

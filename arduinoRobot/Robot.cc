@@ -6,9 +6,6 @@
 
 #include "Robot.h"
 
-#include <ArduinoJson.h>
-
-
 Robot::Robot( Wheel&       leftwheel,
 	      Wheel&       rightwheel,
 	      Head&        head
@@ -210,70 +207,240 @@ bool Robot::robotcommand( char* line )
 
 void Robot::sendjson()
 {
-    // The internal buffer for the Json objects
-    StaticJsonBuffer<200> jsonBuffer;
-
-    JsonObject& root = jsonBuffer.createObject();
-    JsonArray* data;
-
-    root["time"]     = millis();
-    data = &root.createNestedArray("head");
-    data->add( m_head.angleX() );
-    data->add( m_head.angleY() );
-    data = &root.createNestedArray("setspeed");
-    data->add( m_leftwheel .setspeed() );
-    data->add( m_rightwheel.setspeed() );
-    data = &root.createNestedArray("power");
-    data->add( m_leftwheel .power() );
-    data->add( m_rightwheel.power() );
-    data = &root.createNestedArray("speed");
-    data->add( m_leftwheel .speed() );
-    data->add( m_rightwheel.speed() );
-    data = &root.createNestedArray("counts");
-    data->add( m_leftwheel .encoder().count() );
-    data->add( m_rightwheel.encoder().count() );
-    data = &root.createNestedArray("pid");
-    data->add( m_leftwheel.pid().Kp() );
-    data->add( m_leftwheel.pid().Ki() );
-    data->add( m_leftwheel.pid().Kd() );
-
-    root.printTo( Serial );
-    Serial.println();
+    // Hand crafted pseudo-json - cause the json library seems to crash
+    Serial.print( "{\"time\":" );
+    Serial.print( millis() );
+    Serial.print( ",\"head\":[" );
+    Serial.print( m_head.angleX(), 2 );
+    Serial.print( "," );
+    Serial.print( m_head.angleY(), 2 );
+    Serial.print( "],\"setspeed\":[" );
+    Serial.print( m_leftwheel .setspeed(), 2 );
+    Serial.print( "," );
+    Serial.print( m_rightwheel.setspeed(), 2 );
+    Serial.print( "],\"power\":[" );
+    Serial.print( m_leftwheel .power(), 2 );
+    Serial.print( "," );
+    Serial.print( m_rightwheel.power(), 2 );
+    Serial.print( "],\"speed\":[" );
+    Serial.print( m_leftwheel .speed(), 2 );
+    Serial.print( "," );
+    Serial.print( m_rightwheel.speed(), 2 );
+    Serial.print( "],\"counts\":[" );
+    Serial.print( m_leftwheel .encoder().count() );
+    Serial.print( "," );
+    Serial.print( m_rightwheel.encoder().count() );
+    Serial.print( "],\"pid\":[" );
+    Serial.print( m_leftwheel.pid().Kp(), 2 );
+    Serial.print( "," );
+    Serial.print( m_leftwheel.pid().Ki(), 2 );
+    Serial.print( "," );
+    Serial.print( m_leftwheel.pid().Kd(), 2 );
+    Serial.println( "]}" );
+    Serial.flush();
 }
 
-bool Robot::processjson( char *json )
-{
-    // The internal buffer for the Json objects
-    StaticJsonBuffer<200> jsonBuffer;
+// A brain-dead minimal json parser
+// - assumes input is correctly formed and no whitespace
+// - assumes only one dict containing key/value pairs
+// - values must be single value or a list of values
+class MyJson {
+public:
+    MyJson( const char* json )
+	: m_endarray	( false ),
+	  m_enddict	( false ),
+	  m_error	( false ),
+	  m_s		( NULL ) {
+	strncpy( m_json, json, sizeof( m_json ) / sizeof( m_json[0] ) );
+	m_s = m_json;
+    }
 
-    JsonObject& root = jsonBuffer.parseObject( json );
-    
-    if (!root.success()) {
-	Serial.print( "Processing Json: parseObject() failed:" ); Serial.println( json );
+    bool opendict() {
+	// Return if at end of string or error
+	if (*m_s == '\0' || m_error)
+	    return false;
+	
+	// Unset the flag for end of list of values...
+	m_endarray = m_enddict = false;
+
+	if (*m_s != '{') {
+	    return false;
+	}
+	// Skip over the opening brace and return true.
+	m_s++;
+
+	return true;
+    }
+
+    bool enddict() {
+	return m_enddict;
+    }
+
+    bool error() {
+	return m_error;
+    }
+
+    char* getkey() {
+	// Return if at end of string
+	if (*m_s == '\0' || m_error || m_enddict)
+	    return NULL;
+
+	// Unset the flag for end of list of values...
+	m_endarray = false;
+
+	char *s = m_s;
+	if (*s == '}') {
+	    m_enddict = true;
+	    return NULL;
+	}
+
+	// Expecting to find double-quotes around the key name
+	if (*s++ != '"') {
+	    m_error = true;
+	    return NULL;
+	}
+	// Find the end of the key name
+	char *t;
+	for (t = s; *t != '"'; t++) {
+	    if (*t == '\0') {
+		// End of string - abort
+		m_error = true;
+		return NULL;
+	    }
+	}
+	// Set the end of the string to the terminator
+	*t++ = '\0';
+	if (*t != ':') {
+	    // Expect a ':' after the key name - else abort
+	    m_error = true;
+	    return NULL;
+	}
+	// Set the next char pointer to the next char...for next time.
+	m_s = ++t;
+
+	return s;
+    }
+
+    char* getvalue() {
+	// End of string - abort
+	if (*m_s == '\0' || m_error || m_enddict)
+	    return NULL;
+	// If we have hit the end of the list of values - return NULL
+	if (m_endarray)
+	    return NULL;
+
+	char *s = m_s;
+	if (*s == '[') {
+	    // We have list of values...skip forward
+	    s++;
+	}
+	char *t;
+	// Read up to the next 'comma' (or end of list)..
+	for (t = s; *t != ',' && *t != ']'; t++) {
+	    if (*t == '\0') {
+		// End of string - abort
+		m_error = true;
+		return NULL;
+	    }
+	}
+	if (*t == ']') {
+	    // At the end of a list of values...
+	    // Set a flag so we return NULL all calls to getvalue
+	    // .... until we do a getkey().
+	    m_endarray = true;
+	    // Overwrite the terminator (]) with end of string char
+	    *t++ = '\0';
+	    // Skip over a comma which might follow the end of list
+	    if (*t == ',') {
+		t++;
+	    }
+	} else {
+	    // Overwrite the terminating comma with end of string char
+	    *t++ = '\0';
+	}
+	m_s = t;
+
+	return s;
+    }
+
+    double fgetvalue() {
+	// Damn stupid avr-gcc generates relocation errors if I try to use atof()
+	// or any of the following variants
+	// return atof( s );
+	// return String( s ).toFloat();
+	// double f; sscanf( "0.0", "%lg", &f ); return f;
+	// return 0.0;
+	char* s = getvalue();
+	if (s == NULL) {
+	    return 0.0;
+	}
+	return strtod( s, NULL );
+    }
+
+private:
+    bool  m_endarray;
+    bool  m_enddict;
+    bool  m_error;
+    char* m_s;
+    char  m_json[300];
+};
+
+bool Robot::processjson( const char *line )
+{
+    MyJson json( line );
+
+    if (!json.opendict()) {
+	Serial.print( "MyJson - unable to open dict: " );
+	Serial.println( line );
 	return false;
     }
-
-    for (JsonObject::iterator it=root.begin(); it != root.end(); ++it) {
-	char k[100];
-	strncpy( k, it->key, 100 );
-	String key = k;
-	if (key == "head") {
-	    look( (it->value)[0], (it->value)[1] );
-	} else if (key == "setspeed") {
-	    run( (it->value)[0], (it->value)[1] );
-	} else if (key == "power") {
-	    setpower( (it->value)[0], (it->value)[1] );
-	} else if (key == "pid") {
-	    m_leftwheel .pid().setPID( (it->value)[0],
-				       (it->value)[1],
-				       (it->value)[2] );
-	    m_rightwheel.pid().setPID( (it->value)[0],
-				       (it->value)[1],
-				       (it->value)[2] );
-	    m_updated = true;
-	} // Silently ignore any other json keys - for now
+    char *key;
+    while ((key = json.getkey()) != NULL) {
+	if        (!strcmp( key, "head" )) {
+	    double x = json.fgetvalue();
+	    double y = json.fgetvalue();
+	    if (!json.error()) {
+		look( x, y );
+	    }
+	} else if (!strcmp( key, "setspeed" )) {
+	    double x = json.fgetvalue();
+	    double y = json.fgetvalue();
+	    if (!json.error()) {
+		run( x, y );
+	    }
+	} else if (!strcmp( key, "power" )) {
+	    double x = json.fgetvalue();
+	    double y = json.fgetvalue();
+	    if (!json.error()) {
+		setpower( x, y );
+	    }
+	} else if (!strcmp( key, "pid" )) {
+	    double Kp = json.fgetvalue();
+	    double Ki = json.fgetvalue();
+	    double Kd = json.fgetvalue();
+	    if (!json.error()) {
+		m_leftwheel .pid().setPID( Kp, Ki, Kd );
+		m_rightwheel.pid().setPID( Kp, Ki, Kd );
+		m_updated = true;
+	    }
+	} else {
+	    Serial.print( "MyJson - unknown key: " );
+	    Serial.println( key );
+	}
+	if (json.error()) {
+	    Serial.print( "MyJson - error:" );
+	    Serial.print( key );
+	    Serial.print( ":" );
+	    Serial.println( line );
+	    return false;
+	}
     }
-
+    if (json.error()) {
+	Serial.print( "MyJson - error processing: " );
+	Serial.println( line );
+	return false;
+    }
+    
     return true;
 }
 

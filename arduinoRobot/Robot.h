@@ -3,7 +3,7 @@
 #ifndef ROBOT_H
 #define ROBOT_H
 
-#include <ArduinoJson.h>
+//#include <ArduinoJson.h>
 
 #include "Wheel.h"
 #include "Head.h"
@@ -36,7 +36,7 @@ public:
     bool     robotcommand( char* line );
 
     void     sendjson();
-    bool     processjson( char *json );
+    bool     processjson( const char* json );
 
     Wheel&   leftwheel()  { return m_leftwheel;  };
     Wheel&   rightwheel() { return m_rightwheel; };

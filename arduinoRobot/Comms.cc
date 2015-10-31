@@ -40,6 +40,7 @@ char* ReadCommand_serial()
     char c;
     // While there are more characters to be read from the port
     while (Serial.available()) {
+	// digitalWrite( 13, HIGH ); // Flash the LED
 	c = Serial.read();          // Read the next character
 	if (c != '\n') {            // If this is not the end of the line...
 	    *nextchar++ = c;        // Add the next character to the string
