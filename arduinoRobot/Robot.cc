@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "Robot.h"
+#include "Json.h"
 
 Robot::Robot( Wheel&       leftwheel,
 	      Wheel&       rightwheel,
@@ -99,9 +100,17 @@ bool Robot::Loop()
     }
 
     if (m_updated) {
+	m_json.update( "speed",
+		       m_leftwheel .speed(),
+		       m_rightwheel.speed() );
+	m_json.update( "counts",
+		       m_leftwheel .count(),
+		       m_rightwheel.count() );
+	//sendjson();
 	m_updated = false;
-	sendjson();
     }
+    if (m_json.send())
+	Serial.flush();
 
     return true;
 }
@@ -184,7 +193,8 @@ bool Robot::robotcommand( char* line )
     int  numbers[8];      // The list of numbers following the command
 
     if (line[0] == '{') {
-	return processjson( line );
+	bool updated = processjson( line );
+	return updated;
     }
 
     // Every command starts with the <command>, then up to eight integer numbers
@@ -208,184 +218,31 @@ bool Robot::robotcommand( char* line )
 void Robot::sendjson()
 {
     // Hand crafted pseudo-json - cause the json library seems to crash
-    Serial.print( "{\"time\":" );
-    Serial.print( millis() );
-    Serial.print( ",\"head\":[" );
-    Serial.print( m_head.angleX(), 2 );
-    Serial.print( "," );
-    Serial.print( m_head.angleY(), 2 );
-    Serial.print( "],\"setspeed\":[" );
-    Serial.print( m_leftwheel .setspeed(), 2 );
-    Serial.print( "," );
-    Serial.print( m_rightwheel.setspeed(), 2 );
-    Serial.print( "],\"power\":[" );
-    Serial.print( m_leftwheel .power(), 2 );
-    Serial.print( "," );
-    Serial.print( m_rightwheel.power(), 2 );
-    Serial.print( "],\"speed\":[" );
-    Serial.print( m_leftwheel .speed(), 2 );
-    Serial.print( "," );
-    Serial.print( m_rightwheel.speed(), 2 );
-    Serial.print( "],\"counts\":[" );
-    Serial.print( m_leftwheel .encoder().count() );
-    Serial.print( "," );
-    Serial.print( m_rightwheel.encoder().count() );
-    Serial.print( "],\"pid\":[" );
-    Serial.print( m_leftwheel.pid().Kp(), 2 );
-    Serial.print( "," );
-    Serial.print( m_leftwheel.pid().Ki(), 2 );
-    Serial.print( "," );
-    Serial.print( m_leftwheel.pid().Kd(), 2 );
-    Serial.println( "]}" );
-    Serial.flush();
+    m_json.send();
+    m_json.update( "head",
+		   m_head.angleX(),
+		   m_head.angleY() );
+    m_json.update( "setspeed",
+		   m_leftwheel .setspeed(),
+		   m_rightwheel.setspeed() );
+    m_json.update( "power",
+		   m_leftwheel .power(),
+		   m_rightwheel.power() );
+    m_json.update( "speed",
+		   m_leftwheel .speed(),
+		   m_rightwheel.speed() );
+    m_json.update( "counts",
+		   m_leftwheel .count(),
+		   m_rightwheel.count() );
+    m_json.update( "pid",
+		   m_leftwheel.pid().Kp(),
+		   m_leftwheel.pid().Ki(),
+		   m_leftwheel.pid().Kd() );
+
+    m_json.send();
 }
 
-// A brain-dead minimal json parser
-// - assumes input is correctly formed and no whitespace
-// - assumes only one dict containing key/value pairs
-// - values must be single value or a list of values
-class MyJson {
-public:
-    MyJson( const char* json )
-	: m_endarray	( false ),
-	  m_enddict	( false ),
-	  m_error	( false ),
-	  m_s		( NULL ) {
-	strncpy( m_json, json, sizeof( m_json ) / sizeof( m_json[0] ) );
-	m_s = m_json;
-    }
-
-    bool opendict() {
-	// Return if at end of string or error
-	if (*m_s == '\0' || m_error)
-	    return false;
-	
-	// Unset the flag for end of list of values...
-	m_endarray = m_enddict = false;
-
-	if (*m_s != '{') {
-	    return false;
-	}
-	// Skip over the opening brace and return true.
-	m_s++;
-
-	return true;
-    }
-
-    bool enddict() {
-	return m_enddict;
-    }
-
-    bool error() {
-	return m_error;
-    }
-
-    char* getkey() {
-	// Return if at end of string
-	if (*m_s == '\0' || m_error || m_enddict)
-	    return NULL;
-
-	// Unset the flag for end of list of values...
-	m_endarray = false;
-
-	char *s = m_s;
-	if (*s == '}') {
-	    m_enddict = true;
-	    return NULL;
-	}
-
-	// Expecting to find double-quotes around the key name
-	if (*s++ != '"') {
-	    m_error = true;
-	    return NULL;
-	}
-	// Find the end of the key name
-	char *t;
-	for (t = s; *t != '"'; t++) {
-	    if (*t == '\0') {
-		// End of string - abort
-		m_error = true;
-		return NULL;
-	    }
-	}
-	// Set the end of the string to the terminator
-	*t++ = '\0';
-	if (*t != ':') {
-	    // Expect a ':' after the key name - else abort
-	    m_error = true;
-	    return NULL;
-	}
-	// Set the next char pointer to the next char...for next time.
-	m_s = ++t;
-
-	return s;
-    }
-
-    char* getvalue() {
-	// End of string - abort
-	if (*m_s == '\0' || m_error || m_enddict)
-	    return NULL;
-	// If we have hit the end of the list of values - return NULL
-	if (m_endarray)
-	    return NULL;
-
-	char *s = m_s;
-	if (*s == '[') {
-	    // We have list of values...skip forward
-	    s++;
-	}
-	char *t;
-	// Read up to the next 'comma' (or end of list)..
-	for (t = s; *t != ',' && *t != ']'; t++) {
-	    if (*t == '\0') {
-		// End of string - abort
-		m_error = true;
-		return NULL;
-	    }
-	}
-	if (*t == ']') {
-	    // At the end of a list of values...
-	    // Set a flag so we return NULL all calls to getvalue
-	    // .... until we do a getkey().
-	    m_endarray = true;
-	    // Overwrite the terminator (]) with end of string char
-	    *t++ = '\0';
-	    // Skip over a comma which might follow the end of list
-	    if (*t == ',') {
-		t++;
-	    }
-	} else {
-	    // Overwrite the terminating comma with end of string char
-	    *t++ = '\0';
-	}
-	m_s = t;
-
-	return s;
-    }
-
-    double fgetvalue() {
-	// Damn stupid avr-gcc generates relocation errors if I try to use atof()
-	// or any of the following variants
-	// return atof( s );
-	// return String( s ).toFloat();
-	// double f; sscanf( "0.0", "%lg", &f ); return f;
-	// return 0.0;
-	char* s = getvalue();
-	if (s == NULL) {
-	    return 0.0;
-	}
-	return strtod( s, NULL );
-    }
-
-private:
-    bool  m_endarray;
-    bool  m_enddict;
-    bool  m_error;
-    char* m_s;
-    char  m_json[300];
-};
-
-bool Robot::processjson( const char *line )
+bool Robot::processjson( char *line )
 {
     MyJson json( line );
 
@@ -401,18 +258,27 @@ bool Robot::processjson( const char *line )
 	    double y = json.fgetvalue();
 	    if (!json.error()) {
 		look( x, y );
+		m_json.update( "head",
+			       m_head.angleX(),
+			       m_head.angleY() );
 	    }
 	} else if (!strcmp( key, "setspeed" )) {
 	    double x = json.fgetvalue();
 	    double y = json.fgetvalue();
 	    if (!json.error()) {
 		run( x, y );
+		m_json.update( "setspeed",
+			       m_leftwheel .setspeed(),
+			       m_rightwheel.setspeed() );
 	    }
 	} else if (!strcmp( key, "power" )) {
 	    double x = json.fgetvalue();
 	    double y = json.fgetvalue();
 	    if (!json.error()) {
 		setpower( x, y );
+		m_json.update( "power",
+			       m_leftwheel .power(),
+			       m_rightwheel.power() );
 	    }
 	} else if (!strcmp( key, "pid" )) {
 	    double Kp = json.fgetvalue();
@@ -422,6 +288,10 @@ bool Robot::processjson( const char *line )
 		m_leftwheel .pid().setPID( Kp, Ki, Kd );
 		m_rightwheel.pid().setPID( Kp, Ki, Kd );
 		m_updated = true;
+		m_json.update( "pid",
+			       m_leftwheel.pid().Kp(),
+			       m_leftwheel.pid().Ki(),
+			       m_leftwheel.pid().Kd() );
 	    }
 	} else {
 	    Serial.print( "MyJson - unknown key: " );
@@ -430,17 +300,16 @@ bool Robot::processjson( const char *line )
 	if (json.error()) {
 	    Serial.print( "MyJson - error:" );
 	    Serial.print( key );
-	    Serial.print( ":" );
-	    Serial.println( line );
+	    Serial.println( ":" );
 	    return false;
 	}
     }
     if (json.error()) {
-	Serial.print( "MyJson - error processing: " );
-	Serial.println( line );
+	Serial.println( "MyJson - error processing line." );
 	return false;
     }
-    
+    // m_json.send();
+
     return true;
 }
 

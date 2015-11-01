@@ -3,10 +3,9 @@
 #ifndef ROBOT_H
 #define ROBOT_H
 
-//#include <ArduinoJson.h>
-
 #include "Wheel.h"
 #include "Head.h"
+#include "Json.h"
 
 // A "Robot" is built from a "Head" and two "Wheels"
 class Robot {
@@ -36,7 +35,7 @@ public:
     bool     robotcommand( char* line );
 
     void     sendjson();
-    bool     processjson( const char* json );
+    bool     processjson( char* json );
 
     Wheel&   leftwheel()  { return m_leftwheel;  };
     Wheel&   rightwheel() { return m_rightwheel; };
@@ -46,6 +45,7 @@ private:
     Wheel&   m_rightwheel;
     Head&    m_head;
     bool     m_updated;
+    MyJsonSend m_json;
 };
 
 
