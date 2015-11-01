@@ -14,7 +14,7 @@
 #endif
 
 #include "Setup.h"
-#include "Comms.h"
+#include "Comms-serial.h"
 
 #include "Encoder.h"
 #include "Motor.h"

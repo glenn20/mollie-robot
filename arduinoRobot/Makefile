@@ -10,7 +10,15 @@ BOARD_TAG    ?= uno
 
 ARDUINO_PORT ?= $(firstword $(wildcard /dev/ttyACM? /dev/ttyUSB?) NotFound)
 
-ARDUINO_LIBS  = PID_v1 microM AFMotor Servo Wire
+ARDUINO_LIBS  = PID_v1 AFMotor Servo # microM Wire
+
+LOCAL_INO_SRCS  ?= arduinoRobot.ino
+LOCAL_CC_SRCS   ?= Setup.cc Robot.cc Head.cc Wheel.cc Motor-AFMotor.cc Encoder.cc Comms-serial.cc
+
+LOCAL_C_SRCS    ?= 
+LOCAL_CPP_SRCS  ?= 
+LOCAL_PDE_SRCS  ?=
+LOCAL_AS_SRCS   ?=
 
 # default: upload
 

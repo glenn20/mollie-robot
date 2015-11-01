@@ -16,26 +16,32 @@ void setup()
 
 void loop()
 {
-    static int  tick       = 0;
+    static long  starttime = 0;
     // Flash the LED several times per second for the first 5 seconds.
-    static int  onperiod = 100;
-    static int  longperiod = 200;
+    static long  nexton   = 0;
+    static long  nextoff  = 0;
 
-    if (tick == 5000) {
-	// After 5 seconds flash the LED slowly.
-	// This is useful to check the arduino has not crashed.
-	longperiod = 5000;
+    if (starttime == 0) {
+	starttime = millis();
     }
-    if (tick % longperiod == 0) {
+
+    long tick = millis() - starttime;
+
+    // After 5 seconds flash the LED slowly.
+    int onperiod = (tick < 5000) ? 400 : 2000;
+    int offperiod = 200;
+    if (tick > nexton) {
+	nexton  = tick + onperiod;
+	nextoff = tick + offperiod;
 	digitalWrite( LED_PIN, HIGH ); // Flash the LED
-    } else if (tick % onperiod == 0) {
+    } else if (tick > nextoff) {
+	nextoff = tick + offperiod;
 	digitalWrite( LED_PIN, LOW ); // Flash the LED
     }
 
     LoopRobot();
 
     delay( 1 );
-    tick++;
 }
 
 // Local Variables:
