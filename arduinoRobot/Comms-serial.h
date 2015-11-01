@@ -1,14 +1,12 @@
 // -*- c++ -*-
 
-#ifndef COMM_H
-#define COMM_H
+#ifndef COMMS_SERIAL_H
+#define COMMS_SERIAL_H
 
-void SetupComms( int i2c_slave_address );
-char *ReadCommand();
 void SetupComms_serial( );
 char *ReadCommand_serial();
 
-#endif //COMMS_H
+#endif //COMMS_SERIAL_H
 
 // Local Variables:
 // c-basic-offset: 4
