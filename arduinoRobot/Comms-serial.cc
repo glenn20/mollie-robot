@@ -5,7 +5,7 @@
 #include "Comms-serial.h"
 #include "Setup.h"
 
-#define BUFLEN 300
+#define BUFLEN 200
 
 static char  commandline[BUFLEN];
 static char* nextchar = commandline;
