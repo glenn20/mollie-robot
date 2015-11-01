@@ -29,9 +29,9 @@ private:
     volatile unsigned int  m_ndx;            // Where to put next pulse time
     volatile unsigned int  m_npulses;        // # of pulses recorded in array
     volatile unsigned long m_ntime;          // Time between last npulses
-    volatile bool          m_resetspeed;     // Flag to reset speed variables
-    volatile unsigned long m_times[NPULSES]; // Times of the last nine pulses
+    volatile float         m_speed;	     // The speed in counts per sec
     volatile bool          m_reset;
+    volatile unsigned long m_times[NPULSES]; // Times of the last nine pulses
 };
 
 #endif // ENCODER_H

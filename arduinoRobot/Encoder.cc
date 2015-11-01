@@ -14,6 +14,7 @@ Encoder::Encoder( int   controlpin,
       m_ndx               ( 0 ),
       m_npulses           ( 0 ),
       m_ntime             ( 0 ),
+      m_speed		  ( 0.0 ),
       m_reset		  ( false )
 {
 }
@@ -74,6 +75,7 @@ void Encoder::update()
 	m_ntime     = 0;
 	m_ndx       = 0;
 	m_npulses   = 0;
+	m_speed     = 0.0;
     }
     m_lasttime = t;
     m_count++;
@@ -84,8 +86,10 @@ void Encoder::update()
     if (m_npulses >= 2) {
 	// Difference between this reading and the oldest reading in the buffer
 	m_ntime = m_times[m_ndx] - m_times[(m_ndx + 1) % m_npulses];
+	m_speed = (1000000.0 * (m_npulses - 1)) / m_ntime;
     } else {
 	m_ntime = 0;
+	m_speed = 0.0;
     }
     m_ndx = (m_ndx + 1) % NPULSES;
 }
@@ -97,20 +101,12 @@ float Encoder::speed()
 	return 0.0;
     }
     // If more than 0.5 seconds since last pulse, reset the counters
-    if ((micros() - m_lasttime) > 500000) {
+    if ((micros() - m_lasttime) > 500000 && m_ntime != 0) {
 	m_reset = true;
 	return 0.0;
     }
-    // No pulses have been recorded - just return a speed of zero
-    unsigned long ntime = m_ntime;
-    unsigned long npulses = m_npulses;
-    if (ntime == 0) {
-	return 0.0;
-    }
 
-    // Speed is the (number of pulses -1) / (time between first and last pulse)
-    float ntime_seconds = ntime / 1000000.0;
-    return (npulses - 1) / ntime_seconds;
+    return m_speed;
 }
 
 unsigned long Encoder::count()
