@@ -41,7 +41,7 @@ void loop()
 
     LoopRobot();
 
-    delay( 1 );
+    //delay( 1 );
 }
 
 // Local Variables:
