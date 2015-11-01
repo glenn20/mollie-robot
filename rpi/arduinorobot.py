@@ -22,6 +22,7 @@ class RobotState:
         self.pid        = [0.2, 0.0, 0.0 ]
 
     def update( self, s ):
+        print( "Line =", s, end="\r\n" )
         d = json.loads( s )
         self.__dict__.update( d )
         # print( "Robot =", self.__dict__, end="\r\n" )
