@@ -89,6 +89,11 @@ float Wheel::power()
     return m_motor.power();
 }
 
+int Wheel::count()
+{
+    return m_encoder.count();
+}
+
 void Wheel::stop()
 {
     this->setpower( 0 );
