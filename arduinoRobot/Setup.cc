@@ -186,6 +186,8 @@ Robot robbie      (
 void leftEncoderISR()  {robbie.leftwheel ().encoder().update(); }
 void rightEncoderISR() {robbie.rightwheel().encoder().update(); }
 
+static long freeram = 0;
+
 void SetupRobot()
 {
     // Initialise the comms with the Raspberry Pi
@@ -195,6 +197,7 @@ void SetupRobot()
     robbie.initialise();
     robbie.enable();
     Serial.print( F("Free SRAM (Bytes) = ") );
+    freeram = freeMemory();
     Serial.println( freeMemory() );
     delay(1);
     Serial.println( F("Robot ready") );
@@ -210,8 +213,9 @@ void LoopRobot()
 
     // Update the Robot...
     if (robbie.Loop()) {
-	if (freeMemory() < 200) {
-	    Serial.print( F("Warning: Free SRAM low (Bytes) = ") );
+	if (freeMemory() != freeram) {
+	    freeram = freeMemory();
+	    Serial.print( F("Warning: Free SRAM (Bytes) = ") );
 	    Serial.println( freeMemory() );
 	}
     }

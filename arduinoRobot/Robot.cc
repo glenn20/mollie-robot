@@ -279,67 +279,58 @@ bool Robot::processjson( char *json )
 
 bool Robot::sendstate()
 {
-    String s;
-    s.reserve( 80 );
+    DynamicJsonBuffer jsonBuffer;
+
+    JsonObject& root = jsonBuffer.createObject();
+    JsonArray* data = NULL;
 
     if (m_state.head) {
 	m_state.head = false;
-	s += (String( ",\"head\":[" ) +
-	      String( m_head.angleX(), 2 ) +
-	      "," +
-	      String( m_head.angleY(), 2 ) +
-	      "]" );
+	data = &root.createNestedArray("head");
+	data->add( m_head.angleX() );
+	data->add( m_head.angleY() );
     }
     if (m_state.power) {
 	m_state.power = false;
-	s += (String( ",\"power\":[" ) +
-	      String( m_leftwheel .power(), 2 ) +
-	      "," +
-	      String( m_rightwheel.power(), 2 ) +
-	      "]" );
+	data = &root.createNestedArray("power");
+	data->add( m_leftwheel .power() );
+	data->add( m_rightwheel.power() );
     }
     if (m_state.setspeed) {
 	m_state.setspeed = false;
-	s += (String( ",\"setspeed\":[" ) +
-	      String( m_leftwheel .setspeed(), 2 ) +
-	      "," +
-	      String( m_rightwheel.setspeed(), 2 ) +
-	      "]" );
+	data = &root.createNestedArray("setspeed");
+	data->add( m_leftwheel .setspeed() );
+	data->add( m_rightwheel.setspeed() );
     }
     if (m_state.speed) {
 	m_state.speed = false;
-	s += (String( ",\"speed\":[" ) +
-	      String( m_leftwheel .speed(), 2 ) +
-	      "," +
-	      String( m_rightwheel.speed(), 2 ) +
-	      "]" );
+	data = &root.createNestedArray("speed");
+	data->add( m_leftwheel .speed() );
+	data->add( m_rightwheel.speed() );
     }
     if (m_state.counts) {
 	m_state.counts = false;
-	s += (String( ",\"counts\":[" ) +
-	      String( m_leftwheel .count() ) +
-	      "," +
-	      String( m_rightwheel.count() ) +
-	      "]" );
+	data = &root.createNestedArray("counts");
+	data->add( m_leftwheel .count() );
+	data->add( m_rightwheel.count() );
     }
     if (m_state.pid) {
 	m_state.pid = false;
-	s += (String( ",\"pid\":[" ) +
-	      String( m_leftwheel.pid().Kp(), 2 ) +
-	      "," +
-	      String( m_leftwheel.pid().Ki(), 2 ) +
-	      "," +
-	      String( m_leftwheel.pid().Kd(), 2 ) +
-	      "]" );
+	data = &root.createNestedArray("pid");
+	data->add( m_leftwheel.pid().Kp() );
+	data->add( m_leftwheel.pid().Ki() );
+	data->add( m_leftwheel.pid().Kd() );
     }
 
-    if (s.length() > 0) {
-	Serial.println( String( "{\"time\":" ) +
-			String( millis() / 1000.0, 3 ) +
-			s + "}" );
+    if (data != NULL) {
+	root["time"] = millis() / 1000.0;
+	root.printTo( Serial );
+	Serial.println();
+	if (freeMemory() < 100) {
+	    Serial.print( F("Warning: Free SRAM low (Bytes) = ") );
+	    Serial.println( freeMemory() );
+	}
 	Serial.flush();
-	Serial.print( F("Free SRAM (Bytes) = ") );
-	Serial.println( freeMemory() );
 	return true;
     }
 
