@@ -25,7 +25,7 @@ void HeadServo::initialise()
     }
     setangle( 0.0 );
 
-    Serial.print( "MyServo::initialise: servopin=" );
+    Serial.print( F("MyServo::initialise: servopin=") );
     Serial.println( m_servopin );
 }
 

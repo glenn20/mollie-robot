@@ -2,6 +2,8 @@
 
 #include <Arduino.h>
 
+#include <MemoryFree.h>
+
 #define USEAFMOTOR
 
 #if defined(USEMICROM)
@@ -192,8 +194,10 @@ void SetupRobot()
     // Initialise the Robot motors
     robbie.initialise();
     robbie.enable();
+    Serial.print( F("Free SRAM (Bytes) = ") );
+    Serial.println( freeMemory() );
     delay(1);
-    Serial.println( "Robot ready" );
+    Serial.println( F("Robot ready") );
 }
 
 void LoopRobot()
@@ -205,7 +209,12 @@ void LoopRobot()
     }
 
     // Update the Robot...
-    robbie.Loop();
+    if (robbie.Loop()) {
+	if (freeMemory() < 200) {
+	    Serial.print( F("Warning: Free SRAM low (Bytes) = ") );
+	    Serial.println( freeMemory() );
+	}
+    }
 }
 
 // Local Variables:

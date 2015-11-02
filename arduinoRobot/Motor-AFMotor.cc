@@ -23,7 +23,7 @@ void MotorAFMotor::doinitialise()
     m_motor.run( m_forwardp ? FORWARD : BACKWARD );
     setpower( 0 );
  
-    Serial.print( "AFMotor::initialise: motornum = " );
+    Serial.print( F("AFMotor::initialise: motornum = ") );
     Serial.println( m_motornum );
 }
 
@@ -38,10 +38,6 @@ int MotorAFMotor::dosetpower( int power )
 	m_motor.run( forwardp ? FORWARD : BACKWARD );
     }
     m_motor.setSpeed( m_forwardp ? power : -power );
-    // Serial.print( "AFMotor::dosetpower[" );
-    // Serial.print( m_motornum );
-    // Serial.print( "] = " );
-    // Serial.println( power );
     return power;
 }
 

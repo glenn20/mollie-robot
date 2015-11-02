@@ -51,11 +51,7 @@ float Wheel::setspeed( float speed )
 	return 0.0;
     }
     if (m_controlstate == PID_NONE) {
-	//Serial.print( "Controlstate0=" );
-	//Serial.println( m_controlstate );
 	m_controlstate = PID_STARTING;
-	//Serial.print( "ControlstateA=" );
-	//Serial.println( m_controlstate );
     }
     // Save the target speed - will be used by PID loop in Loop() below.
     m_setspeed = speed;
@@ -78,8 +74,6 @@ int Wheel::setpower( int power )
     if (m_controlstate != PID_NONE) {
 	m_controlstate = PID_NONE;
 	m_setspeed     = 0.0;
-	//Serial.print( "ControlstateB=" );
-	//Serial.println( m_controlstate );
     }
     return m_motor.setpower( power );
 }
@@ -111,8 +105,6 @@ bool Wheel::Loop()
     case PID_STARTING:
 	// We are starting the wheels from rest - start the startup sequence
 	m_controlstate   = PID_HIGHPOWER;
-	//Serial.print( "ControlstateC=" );
-	//Serial.println( m_controlstate );
 	m_starttime      = millis();
 	m_startcount     = m_encoder.count();
 	m_motor.setpower( 250 );
@@ -129,8 +121,6 @@ bool Wheel::Loop()
 	    m_controlstate = PID_LOWPOWER;
 	    m_motor.setpower( 180 );
 	    updated = true;
-	    //Serial.print( "ControlstateD=" );
-	    //Serial.println( m_controlstate );
 	}
 	break;
     case PID_LOWPOWER:
@@ -140,8 +130,6 @@ bool Wheel::Loop()
 	    m_controlstate = PID_PIDCONTROL;
 	    // Initialise the output power settings for the PID controller
 	    m_pidpower = this->power();
-	    //Serial.print( "ControlstateE=" );
-	    //Serial.println( m_controlstate );
 	}
 	break;
     case PID_PIDCONTROL:

@@ -4,6 +4,10 @@
 
 #include <string.h>
 
+#include <ArduinoJson.h>
+
+#include <MemoryFree.h>
+
 #include "Robot.h"
 #include "Json.h"
 
@@ -100,19 +104,16 @@ bool Robot::Loop()
     }
 
     if (m_updated) {
-	m_json.update( "speed",
-		       m_leftwheel .speed(),
-		       m_rightwheel.speed() );
-	m_json.update( "counts",
-		       m_leftwheel .count(),
-		       m_rightwheel.count() );
-	//sendjson();
-	m_updated = false;
+	m_state.speed = true;;
+	m_state.counts = true;
     }
-    if (m_json.send())
+    if (sendstate())
 	Serial.flush();
 
-    return true;
+    bool status = m_updated;
+    m_updated = false;
+
+    return status;
 }
 
 // --- Init PID Controller ---
@@ -215,102 +216,134 @@ bool Robot::robotcommand( char* line )
     return true;
 }
 
-void Robot::sendjson()
+bool Robot::processjson( char *json )
 {
-    // Hand crafted pseudo-json - cause the json library seems to crash
-    m_json.send();
-    m_json.update( "head",
-		   m_head.angleX(),
-		   m_head.angleY() );
-    m_json.update( "setspeed",
-		   m_leftwheel .setspeed(),
-		   m_rightwheel.setspeed() );
-    m_json.update( "power",
-		   m_leftwheel .power(),
-		   m_rightwheel.power() );
-    m_json.update( "speed",
-		   m_leftwheel .speed(),
-		   m_rightwheel.speed() );
-    m_json.update( "counts",
-		   m_leftwheel .count(),
-		   m_rightwheel.count() );
-    m_json.update( "pid",
-		   m_leftwheel.pid().Kp(),
-		   m_leftwheel.pid().Ki(),
-		   m_leftwheel.pid().Kd() );
+    // The internal buffer for the Json objects
+    StaticJsonBuffer<150> jsonBuffer;
 
-    m_json.send();
-}
-
-bool Robot::processjson( char *line )
-{
-    MyJson json( line );
-
-    if (!json.opendict()) {
-	Serial.print( "MyJson - unable to open dict: " );
-	Serial.println( line );
+    JsonObject& root = jsonBuffer.parseObject( json );
+    
+    if (!root.success()) {
+	Serial.print( "Processing Json: parseObject() failed:" ); Serial.println( json );
 	return false;
     }
-    char *key;
-    while ((key = json.getkey()) != NULL) {
+
+    for (JsonObject::iterator it=root.begin(); it != root.end(); ++it) {
+	const char* key = it->key;
 	if        (!strcmp( key, "head" )) {
-	    double x = json.fgetvalue();
-	    double y = json.fgetvalue();
-	    if (!json.error()) {
-		look( x, y );
-		m_json.update( "head",
-			       m_head.angleX(),
-			       m_head.angleY() );
-	    }
+	    double x = (it->value)[0];
+	    double y = (it->value)[1];
+	    look( x, y );
+	    m_state.head = true;
 	} else if (!strcmp( key, "setspeed" )) {
-	    double x = json.fgetvalue();
-	    double y = json.fgetvalue();
-	    if (!json.error()) {
-		run( x, y );
-		m_json.update( "setspeed",
-			       m_leftwheel .setspeed(),
-			       m_rightwheel.setspeed() );
-	    }
+	    double x = (it->value)[0];
+	    double y = (it->value)[1];
+	    run( x, y );
+	    m_state.setspeed = true;
 	} else if (!strcmp( key, "power" )) {
-	    double x = json.fgetvalue();
-	    double y = json.fgetvalue();
-	    if (!json.error()) {
-		setpower( x, y );
-		m_json.update( "power",
-			       m_leftwheel .power(),
-			       m_rightwheel.power() );
-	    }
+	    double x = (it->value)[0];
+	    double y = (it->value)[1];
+	    setpower( x, y );
+	    m_state.power = true;
 	} else if (!strcmp( key, "pid" )) {
-	    double Kp = json.fgetvalue();
-	    double Ki = json.fgetvalue();
-	    double Kd = json.fgetvalue();
-	    if (!json.error()) {
-		m_leftwheel .pid().setPID( Kp, Ki, Kd );
-		m_rightwheel.pid().setPID( Kp, Ki, Kd );
-		m_updated = true;
-		m_json.update( "pid",
-			       m_leftwheel.pid().Kp(),
-			       m_leftwheel.pid().Ki(),
-			       m_leftwheel.pid().Kd() );
-	    }
+	    double Kp = (it->value)[0];
+	    double Ki = (it->value)[1];
+	    double Kd = (it->value)[2];
+	    m_leftwheel .pid().setPID( Kp, Ki, Kd );
+	    m_rightwheel.pid().setPID( Kp, Ki, Kd );
+	    m_state.pid = true;
+	    m_updated   = true;
 	} else {
-	    Serial.print( "MyJson - unknown key: " );
+	    Serial.print( F("ProcessJson() - unknown key: ") );
 	    Serial.println( key );
 	}
-	if (json.error()) {
-	    Serial.print( "MyJson - error:" );
-	    Serial.print( key );
-	    Serial.println( ":" );
-	    return false;
-	}
+	// if (key == "head") {
+	//     look( (it->value)[0], (it->value)[1] );
+	// } else if (key == "setspeed") {
+	//     run( (it->value)[0], (it->value)[1] );
+	// } else if (key == "power") {
+	//     setpower( (it->value)[0], (it->value)[1] );
+	// } else if (key == "pid") {
+	//     m_leftwheel .pid().setPID( (it->value)[0],
+	// 			       (it->value)[1],
+	// 			       (it->value)[2] );
+	//     m_rightwheel.pid().setPID( (it->value)[0],
+	// 			       (it->value)[1],
+	// 			       (it->value)[2] );
+	//     m_updated = true;
+	// } // Silently ignore any other json keys - for now
     }
-    if (json.error()) {
-	Serial.println( "MyJson - error processing line." );
-	return false;
-    }
-    // m_json.send();
 
     return true;
+}
+
+bool Robot::sendstate()
+{
+    String s;
+    s.reserve( 80 );
+
+    if (m_state.head) {
+	m_state.head = false;
+	s += (String( ",\"head\":[" ) +
+	      String( m_head.angleX(), 2 ) +
+	      "," +
+	      String( m_head.angleY(), 2 ) +
+	      "]" );
+    }
+    if (m_state.power) {
+	m_state.power = false;
+	s += (String( ",\"power\":[" ) +
+	      String( m_leftwheel .power(), 2 ) +
+	      "," +
+	      String( m_rightwheel.power(), 2 ) +
+	      "]" );
+    }
+    if (m_state.setspeed) {
+	m_state.setspeed = false;
+	s += (String( ",\"setspeed\":[" ) +
+	      String( m_leftwheel .setspeed(), 2 ) +
+	      "," +
+	      String( m_rightwheel.setspeed(), 2 ) +
+	      "]" );
+    }
+    if (m_state.speed) {
+	m_state.speed = false;
+	s += (String( ",\"speed\":[" ) +
+	      String( m_leftwheel .speed(), 2 ) +
+	      "," +
+	      String( m_rightwheel.speed(), 2 ) +
+	      "]" );
+    }
+    if (m_state.counts) {
+	m_state.counts = false;
+	s += (String( ",\"counts\":[" ) +
+	      String( m_leftwheel .count() ) +
+	      "," +
+	      String( m_rightwheel.count() ) +
+	      "]" );
+    }
+    if (m_state.pid) {
+	m_state.pid = false;
+	s += (String( ",\"pid\":[" ) +
+	      String( m_leftwheel.pid().Kp(), 2 ) +
+	      "," +
+	      String( m_leftwheel.pid().Ki(), 2 ) +
+	      "," +
+	      String( m_leftwheel.pid().Kd(), 2 ) +
+	      "]" );
+    }
+
+    if (s.length() > 0) {
+	Serial.println( String( "{\"time\":" ) +
+			String( millis() / 1000.0, 3 ) +
+			s + "}" );
+	Serial.flush();
+	Serial.print( F("Free SRAM (Bytes) = ") );
+	Serial.println( freeMemory() );
+	return true;
+    }
+
+    return false;
 }
 
 // Local Variables:

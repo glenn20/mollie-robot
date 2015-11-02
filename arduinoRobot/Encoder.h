@@ -17,6 +17,7 @@ public:
     bool     valid();      // Return true if this a valid encoder
     void     update();     // Interrupt routine - record the encoder count
     float    speed();      // Return the encoder speed in pulses per second
+    bool     moving();     // Is the wheel moving?
 
     // Return the total number of encoder pulses recorded
     unsigned long count();

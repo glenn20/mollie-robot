@@ -29,9 +29,9 @@ void Encoder::initialise()
 	attachInterrupt( digitalPinToInterrupt( m_controlpin ),
 			 m_interruptfunction,
 			 CHANGE );
-	Serial.print( "Encoder::initialise: controlpin=" );
+	Serial.print( F("Encoder::initialise: controlpin=") );
 	Serial.print( m_controlpin );
-	Serial.print( " interrupt=" );
+	Serial.print( F(" interrupt=") );
 	Serial.println( digitalPinToInterrupt( m_controlpin ) );
     }
 }
@@ -107,6 +107,12 @@ float Encoder::speed()
     }
 
     return m_speed;
+}
+
+bool Encoder::moving()
+{
+    float s = speed();
+    return (s < -0.01 || 0.01 < s);
 }
 
 unsigned long Encoder::count()
