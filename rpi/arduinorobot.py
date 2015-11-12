@@ -146,9 +146,9 @@ class ArduinoRobot():
             direction: turn left (-1) or right (1), or straight ahead (0)
         """
         self.speed     = self._constrain( speed, -255, 255 )
-        self.direction = self._constrain( direction, -0.1, 0.1 )
+        self.direction = self._constrain( direction, -0.5, 0.5 )
 
-        difference = direction * 500 / 1000
+        difference = direction * 2.0 * self.speed
         left  = speed + 0.5 * difference
         right = speed - 0.5 * difference
         if (left > 255):
@@ -273,7 +273,7 @@ class ArduinoRobot():
             return True
         elif c == " ":
             # Stop robot command
-            return self.Power( 0 )
+            return self.Power( 0 ) and self.Run( 0, 0 )
         elif c == "z":
             # Turn camera/head to left
             return self.Look( self.angleX - 2, self.angleY )
@@ -303,10 +303,13 @@ class ArduinoRobot():
             return self.Power( self.power - 10 )
         elif c == ".":
             # Right key - Turn robot to the right
-            return self.Run( self.speed, self.direction + 0.02 )
+            return self.Run( self.speed, self.direction + 0.05 )
         elif c == ",":
             # Left key - Turn robot to the left
-            return self.Run( self.speed, self.direction - 0.02 )
+            return self.Run( self.speed, self.direction - 0.05 )
+        elif c == "/":
+            # Go straigh ahead
+            return self.Run( self.speed, 0.0 )
         elif c == "u":
             # Increment Kp
             return self.PID(  0.1,  0.0,  0.0 )
