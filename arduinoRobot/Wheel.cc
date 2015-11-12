@@ -14,10 +14,10 @@ Wheel::Wheel(
     m_name	   ( name ),
     m_tick	   ( 0 ),
     m_setspeed	   ( 0.0 ),
-    m_controlstate ( PID_NONE ),
     m_starttime	   ( 0 ),
     m_startcount   ( 0 ),
-    m_pidpower     ( 0 )
+    m_pidpower     ( 0 ),
+    m_controlstate ( PID_NONE )
 {
 }
 
@@ -125,7 +125,7 @@ bool Wheel::Loop()
 	break;
     case PID_LOWPOWER:
 	// End the start sequence phase
-	if (millis() - m_starttime > 10000) {
+	if (millis() - m_starttime > 1000) {
 	    // Allow time for speed to settle down before start PID
 	    m_controlstate = PID_PIDCONTROL;
 	    // Initialise the output power settings for the PID controller
@@ -137,32 +137,23 @@ bool Wheel::Loop()
 	if (m_pid.UpdatePID( m_setspeed,
 			     this->speed())) {
 	    m_pidpower += m_pid.output();
-	    // double p = m_pidpower;
-	    // if (m_setspeed > 0.0) {
-	    // 	p = ((p <    0) ?   0 :
-	    // 	     ((p > 255) ? 255 :
-	    // 	      p ));
-	    // } else {
-	    // 	p = ((p >     0) ?    0 :
-	    // 	     ((p < -255) ? -255 :
-	    // 	      p ));
-	    // }
-	    // m_pidpower = p;
+	    double p = m_pidpower;
+	    if (m_setspeed > 0.0) {
+	     	p = ((p <    0) ?   0 :
+	     	     ((p > 255) ? 255 :
+	     	      p ));
+	    } else {
+	    	p = ((p >     0) ?    0 :
+	    	     ((p < -255) ? -255 :
+	    	      p ));
+	    }
+	    m_pidpower = p;
 	    m_motor.setpower( (int) m_pidpower );
 	    updated = true;
 	}
 	break;
     default:
 	break;
-    }
-
-    // Every 500 milliseconds, set updated if wheel speed is non-zero
-    // So that we report counts, speed regularly while moving
-    if (!updated && (millis() % 500 == 0)) {
-	float s = speed();
-	if (s < -0.1 || 0.1 < s) {
-	    updated = true;
-	}
     }
 
     return updated;

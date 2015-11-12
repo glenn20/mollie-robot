@@ -21,9 +21,9 @@ private:
     int   dosetpower( int power );   // Set the wheel power (-255->255)
 
 private:
+    AF_DCMotor m_motor;
     int        m_motornum;
     bool       m_forwardp;
-    AF_DCMotor m_motor;
 };
 
 #endif //MOTOR_AFMOTOR_H

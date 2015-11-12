@@ -100,8 +100,8 @@ float Encoder::speed()
     if (!valid()) {
 	return 0.0;
     }
-    // If more than 0.5 seconds since last pulse, reset the counters
-    if ((micros() - m_lasttime) > 500000 && m_ntime != 0) {
+    // If more than 2 seconds since last pulse, reset the counters
+    if ((micros() - m_lasttime) > 2000000 && m_ntime != 0) {
 	m_reset = true;
 	return 0.0;
     }
@@ -111,8 +111,7 @@ float Encoder::speed()
 
 bool Encoder::moving()
 {
-    float s = speed();
-    return (s < -0.01 || 0.01 < s);
+    return (micros() - m_lasttime) < 500000;
 }
 
 unsigned long Encoder::count()

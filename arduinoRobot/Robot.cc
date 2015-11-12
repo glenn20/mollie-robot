@@ -1,15 +1,12 @@
 // -*- c++ -*-
 
-#include <PID_v1.h>
-
 #include <string.h>
 
+#include <PID_v1.h>
 #include <ArduinoJson.h>
-
 #include <MemoryFree.h>
 
 #include "Robot.h"
-#include "Json.h"
 
 Robot::Robot( Wheel&       leftwheel,
 	      Wheel&       rightwheel,
@@ -18,6 +15,7 @@ Robot::Robot( Wheel&       leftwheel,
     :         m_leftwheel  ( leftwheel ),
 	      m_rightwheel ( rightwheel ),
 	      m_head       ( head ),
+	      m_state      ( ),
 	      m_updated    ( false )
 {
 }
@@ -92,28 +90,6 @@ void Robot::look( float angleX )
 {
     m_head.look( angleX );
     m_updated = true;
-}
-
-bool Robot::Loop()
-{
-    if (m_leftwheel.Loop()) {
-	m_updated = true;
-    }
-    if (m_rightwheel.Loop()) {
-	m_updated = true;
-    }
-
-    if (m_updated) {
-	m_state.speed = true;;
-	m_state.counts = true;
-    }
-    if (sendstate())
-	Serial.flush();
-
-    bool status = m_updated;
-    m_updated = false;
-
-    return status;
 }
 
 // --- Init PID Controller ---
@@ -214,6 +190,35 @@ bool Robot::robotcommand( char* line )
 	Serial.print( "Unknown robot command: " ); Serial.println( line );
     }
     return true;
+}
+
+bool Robot::Loop()
+{
+    static unsigned long lasttime = 0;
+
+    bool leftupdate = m_leftwheel.Loop();
+    bool rightupdate = m_rightwheel.Loop();
+
+    unsigned long thistime = millis();
+
+    if ((thistime - lasttime > 500) &&
+	((leftupdate || rightupdate) ||
+	 (m_leftwheel.encoder().moving() || m_rightwheel.encoder().moving()))) {
+	m_state.speed  = true;
+	m_state.power  = true;
+	m_state.counts = true;
+	m_updated = true;
+    }
+
+    if (sendstate()) {
+	Serial.flush();
+	lasttime = thistime;
+    }
+
+    bool status = m_updated;
+    m_updated = false;
+
+    return status;
 }
 
 bool Robot::processjson( char *json )

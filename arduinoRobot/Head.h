@@ -22,9 +22,9 @@ public:
     float angle();
 
 private:
-    int   m_servopin;
-    float m_angle;
     Servo m_servo;
+    float m_angle;
+    int   m_servopin;
     int   m_origin;
     int   m_min;
     int   m_max;

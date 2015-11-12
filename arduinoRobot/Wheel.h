@@ -51,10 +51,10 @@ private:
     String        m_name;               // A name for diagnostic printouts
     unsigned long m_tick;               // An internal loop counter
     float         m_setspeed;           // The target speed for the wheel
-    int           m_controlstate;
     unsigned long m_starttime;
     unsigned long m_startcount;
     double        m_pidpower;
+    int           m_controlstate;
 };
 
 #endif // WHEEL_H

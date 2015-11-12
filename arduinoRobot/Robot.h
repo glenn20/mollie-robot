@@ -72,8 +72,8 @@ private:
     Wheel&   m_leftwheel;
     Wheel&   m_rightwheel;
     Head&    m_head;
-    bool     m_updated;
     RobotState m_state;
+    bool     m_updated;
 };
 
 

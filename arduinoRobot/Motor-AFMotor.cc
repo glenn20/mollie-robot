@@ -11,9 +11,9 @@
 //  - Control Pin 2    (Digital Output - sets motor direction)
 //  - Enable Pin       (PWM - sets motor power levels (voltage))
 MotorAFMotor::MotorAFMotor( int motornum )
-    : m_motornum  ( motornum ),
-      m_forwardp  ( false ),
-      m_motor     ( motornum, MOTOR12_64KHZ )
+    : m_motor     ( motornum, MOTOR12_64KHZ ),
+      m_motornum  ( motornum ),
+      m_forwardp  ( false )
 {
 }
 
@@ -31,6 +31,10 @@ void MotorAFMotor::doinitialise()
 // Write the power (voltage) setting (-255->255) to the PWM Enable Pin.
 int MotorAFMotor::dosetpower( int power )
 {
+    if (power < -255)
+	power = -255;
+    if (power > 255)
+	power = 255;
     bool forwardp = (power >= 0);
     if (m_forwardp != forwardp) {
 	// If we have changed direction - set the H-bridge direction control

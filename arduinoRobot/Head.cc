@@ -9,9 +9,9 @@ HeadServo::HeadServo(
     int    origin,
     int    min,
     int    max 
-    ) : m_servopin( servopin ),
+    ) : m_servo   ( ),
 	m_angle   ( 0.0 ),
-	m_servo   ( ),
+	m_servopin( servopin ),
 	m_origin  ( origin ),
 	m_min     ( min ),
 	m_max     ( max )
