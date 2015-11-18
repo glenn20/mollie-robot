@@ -61,7 +61,6 @@ class TrackingRobot():
     # The function to process each captured image
     # Process each image to identify location of object
     # Send the location of the object to the arduino
-    # Process any key presses as remotecontrol for the robot
     def imagetracking( self, image, otherqueues ):
         """
         Process captured images and locate object for tracking.
@@ -122,7 +121,7 @@ class TrackingRobot():
             self.showpreview
         ) if self.camera is not None else None
 
-        # Diagnostic: Print all the threads we have started. 
+        # Diagnostic: Print all the threads we have started.
         for t in threading.enumerate():
             print( t )
         print( '' )
@@ -132,19 +131,8 @@ class TrackingRobot():
         Main execution loop for the robot.
         Reads keypresses and issues commands to control the robot.
         """
-        old_settings = termios.tcgetattr( sys.stdin.fileno() )
-        try:
-            tty.setraw( sys.stdin.fileno() )
-            while not self.done:
-                print( ">>", end=" " )
-                c = sys.stdin.read( 1 )
-                print( c, end="\r\n" )
-                if self.robot.RemoteControl( c ) is None:
-                    self.done = True
-        finally:
-            termios.tcsetattr( sys.stdin.fileno(),
-                               termios.TCSADRAIN,
-                               old_settings )
+        while True:
+            time.sleep( 1 )
 
     def close( self ):
         """

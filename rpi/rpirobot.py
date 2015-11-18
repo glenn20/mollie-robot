@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import sys
 
 parser = argparse.ArgumentParser(
     description='Run the RPI-arduino robot control program.'
@@ -78,7 +79,7 @@ if not args.nocamera:
     camera.awb_gains          = (1.2,1.2)
 
 # Connect to and initialise the arduino robot
-robot.Initialise()
+robot.initialise()
 
 # Assemble our combined TrackingRobot from a robot, a camera and a tracker 
 trackingrobot = trackingrobot.TrackingRobot(

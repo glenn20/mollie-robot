@@ -10,6 +10,50 @@ import itertools
 import time
 import json
 
+import paho.mqtt.client as mqtt
+
+class MqRobot( mqtt.Client ):
+    """
+    A simple wrapper to send robot status messages to the MQTT broker
+    """
+    def __init__( self, robot, clientid = None ):
+        super( MqRobot, self ).__init__( clientid )
+        self.robot        = robot
+        self.on_connect   = self._on_connect
+        self.on_subscribe = self._on_subscribe
+        self.on_message   = self._on_message
+        # self.on_log       = self._on_log
+
+    def _on_connect( self, mqttc, obj, flags, rc ):
+        print( "MQTT: Connected: rc: " + str( rc ),
+               end="\r\n" )
+
+    def _on_subscribe( self, mqttc, obj, mid, granted_qos ):
+        print( "MQTT: Subscribed: " + str( mid ) + " " + str( granted_qos ),
+               end="\r\n" )
+
+    def _on_message( self, mqttc, obj, msg ):
+        print( "MQTT: " + msg.topic + " " +
+               str( msg.qos ) + " " + str( msg.payload ),
+               end="\r\n" )
+        self.robot.send( self.robot.targetstate.state( json.loads( msg.payload ) ) )
+
+    def _on_log( self, mqttc, obj, level, string ):
+        print( "MQTT: " +  string,
+               end="\r\n" )
+
+    def initialise( self ):
+        self.connect( "127.0.0.1", 1883, 60 )
+        self.loop_start()
+        self.subscribe( "/mollie-robot/target", 1 )
+
+    def close( self ):
+        self.loop_stop()
+        self.disconnect()
+
+    def update( self, state ):
+        self.publish( "/mollie-robot/state", state, qos=0, retain=True )
+
 
 class RobotState:
     def __init__( self ):
@@ -74,7 +118,6 @@ class ArduinoRobot():
         Initialise(): Connect to the arduino and initialise the robot.
         Run(): Tell the robot to move.
         Look(): Point the robot camera in the given direction.
-        Look(): Point the robot camera in the given direction.
         Track(): Tell the robot to track to the given directions.
         TrackObject(): Tell the robot to track the object at the coordinates.
         RemoteControl(c): Process a keypress as a remote control for robot.
@@ -96,19 +139,14 @@ class ArduinoRobot():
         self.arduino    = arduinoComms
         self.targetstate= RobotState()
         self.robotstate = RobotState()
-        self.datafile   = open( "./robbie.csv", "w", 1 )
+        self.mqrobot    = MqRobot( self )
 
-        # First line of the data file is the name of the data fields
-        print( *self.robotstate.listofkeys(), sep=',',
-               file=self.datafile )
         self.arduino.setcallback( self.process_arduino_response )
 
     def process_arduino_response( self, s ):
         if (s[0] == "{"):
+            self.mqrobot.update( s )
             self.robotstate.update( s )
-            # Save the robotstate in the data logging file
-            print( *self.robotstate.listofvalues(), sep=',',
-                   file=self.datafile )
         else:
             print( "Arduino: ", s, end="\r\n" )
 
@@ -130,91 +168,20 @@ class ArduinoRobot():
         return self.arduino.send( command )
 
     # Connect to and initialise the arduino robot
-    def Initialise( self ):
+    def initialise( self ):
         """
         Connect to and initialise the arduino robot
         """
+        self.mqrobot.initialise()
         return self.Look( 0, 0 ) and self.Run( 0, 0 )
 
-    # Tell the robot to move at "speed" in "direction"
-    def Run( self, speed, direction=0 ):
+    def close( self ):
         """
-        Tell the robot to move at the given speed in the given direction.
-
-        Arguments:
-            speed (int): speed at which the robot should move.
-            direction: turn left (-1) or right (1), or straight ahead (0)
+        Shutdown/close the robot.
         """
-        self.speed     = self._constrain( speed, -255, 255 )
-        self.direction = self._constrain( direction, -0.5, 0.5 )
-
-        difference = direction * 2.0 * self.speed
-        left  = speed + 0.5 * difference
-        right = speed - 0.5 * difference
-        if (left > 255):
-            left  = 255
-            right = left - difference
-        elif (left < -255):
-            left  = -255
-            right = left + difference
-        if (right > 255):
-            right = 255
-            left  = right + difference
-        elif (right < -255):
-            right = -255;
-            left  = right - difference
-
-        return self.send(
-            self.targetstate.state( {"setspeed": [int(round(left)),
-                                                  int(round(right))]} )
-        )
-
-    # Tell the robot to move at "speed" in "direction"
-    def Power( self, power ):
-        """
-        Set the robot motor power.
-
-        Arguments:
-            power (int): power setting for robot motors.
-        """
-        self.power     = self._constrain( power, -255, 255 )
-        return self.send(
-            self.targetstate.state( {"power":
-                                     [int(round(self.power)),
-                                      int(round(self.power))]} )
-        )
-
-    # Tell the robot to point camera at "angle"
-    def Look( self, angleX, angleY = -1000 ):
-        """
-        Tell the robot to turn the camera to point in the given direction.
-
-        Arguments:
-            angleX: Angle to point the camera (-90.0 to 90.0)
-            angleY: Angle to point the camera (-90.0 to 90.0)
-        Returns:
-            True on success, False on failure.
-        """
-        self.angleX = self._constrain( angleX, -90, 90 )
-        if angleY > -1000:
-            self.angleY = self._constrain( angleY, -90, 90 )
-        return self.send(
-            self.targetstate.state(
-                {"head": [ self.angleX, self.angleY]}
-            )
-        )
-
-    def PID( self, deltaKp, deltaKi, deltaKd ):
-        """
-        Adjust the PID parameters for the PID control on the motor wheels.
-        """
-        return self.send(
-            self.targetstate.state(
-                {"pid": [self.targetstate.pid[0] + deltaKp,
-                         self.targetstate.pid[1] + deltaKi,
-                         self.targetstate.pid[2] + deltaKd ]}
-            )
-        )
+        print( "Closing down the robot..." )
+        self.arduino.close()
+        self.mqrobot.close()
 
     # Tell the robot to track to the given angles
     def Track( self, x, y ):
@@ -251,89 +218,3 @@ class ArduinoRobot():
             # If we lost the object - tell the robot to go straight
             if self.direction != 0 and self.speed != 0:
                 return self.Run( self.speed, 0 )
-
-    
-    # Process any key presses - return False if time to quit
-    def RemoteControl( self, c ):
-        """
-        Interpret a key press (character) as a remote controller for the robot.
-
-        Arguments:
-            c: The remote control key.
-        """
-        # print( ">>  %s" % (c) )
-        if c == "q":
-            # Quit the program
-            self.Run( 0, 0 )
-            # self.Look( 0 )
-            return None
-        elif c == "t":
-            # Toggle tracking mode on/off
-            self.trackingOn = not self.trackingOn
-            return True
-        elif c == " ":
-            # Stop robot command
-            return self.Power( 0 ) and self.Run( 0, 0 )
-        elif c == "z":
-            # Turn camera/head to left
-            return self.Look( self.angleX - 2, self.angleY )
-        elif c == "x":
-            # Turn camera/head to right
-            return self.Look( self.angleX + 2, self.angleY )	
-        elif c == "c":
-            # Turn camera/head down
-            return self.Look( self.angleX, self.angleY - 2 )
-        elif c == "d":
-            # Turn camera/head up
-            return self.Look( self.angleX, self.angleY + 2 )	
-        elif c == "s":
-            # Look straight ahead
-            return self.Look( 0.0, 0.0 )	
-        elif c == "g":
-            # Up key - Increase robot speed
-            return self.Run( self.speed + 2, self.direction )
-        elif c == "b":
-            # Down key - Decrease robot speed
-            return self.Run( self.speed - 2, self.direction )
-        elif c == "f":
-            # Up key - Increase robot power
-            return self.Power( self.power + 10 )
-        elif c == "v":
-            # Down key - Decrease robot power
-            return self.Power( self.power - 10 )
-        elif c == ".":
-            # Right key - Turn robot to the right
-            return self.Run( self.speed, self.direction + 0.05 )
-        elif c == ",":
-            # Left key - Turn robot to the left
-            return self.Run( self.speed, self.direction - 0.05 )
-        elif c == "/":
-            # Go straigh ahead
-            return self.Run( self.speed, 0.0 )
-        elif c == "u":
-            # Increment Kp
-            return self.PID(  0.1,  0.0,  0.0 )
-        elif c == "j":
-            # Decrement Kp
-            return self.PID( -0.1,  0.0,  0.0 )
-        elif c == "i":
-            # Increment Ki
-            return self.PID(  0.0,  0.1,  0.0 )
-        elif c == "k":
-            # Decrement Ki
-            return self.PID(  0.0, -0.1,  0.0 )
-        elif c == "o":
-            # Increment Kd
-            return self.PID(  0.0,  0.0,  0.1 )
-        elif c == "l":
-            # Decrement Kd
-            return self.PID(  0.0,  0.0, -0.1 )
-        return True
-
-    def close( self ):
-        """
-        Shutdown/close the robot.
-        """
-        print( "Closing down the robot..." )
-        self.arduino.close()
-        self.datafile.close()
