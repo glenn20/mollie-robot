@@ -86,7 +86,7 @@ void Encoder::update()
     if (m_npulses >= 2) {
 	// Difference between this reading and the oldest reading in the buffer
 	m_ntime = m_times[m_ndx] - m_times[(m_ndx + 1) % m_npulses];
-	m_speed = (1000000.0 * (m_npulses - 1)) / m_ntime;
+	m_speed = (1000000.0 * (m_npulses - 1)) / m_ntime / 48;
     } else {
 	m_ntime = 0;
 	m_speed = 0.0;
@@ -101,7 +101,7 @@ float Encoder::speed()
 	return 0.0;
     }
     // If more than 2 seconds since last pulse, reset the counters
-    if ((micros() - m_lasttime) > 2000000 && m_ntime != 0) {
+    if ((micros() - m_lasttime) > 200000 && m_ntime != 0) {
 	m_reset = true;
 	return 0.0;
     }
@@ -111,7 +111,7 @@ float Encoder::speed()
 
 bool Encoder::moving()
 {
-    return (micros() - m_lasttime) < 500000;
+    return (micros() - m_lasttime) < 200000;
 }
 
 unsigned long Encoder::count()

@@ -83,7 +83,7 @@ float Wheel::power()
     return m_motor.power();
 }
 
-int Wheel::count()
+unsigned long Wheel::count()
 {
     return m_encoder.count();
 }
@@ -107,7 +107,7 @@ bool Wheel::Loop()
 	m_controlstate   = PID_HIGHPOWER;
 	m_starttime      = millis();
 	m_startcount     = m_encoder.count();
-	m_motor.setpower( 250 );
+	m_motor.setpower( 200 );
 	updated = true;
 	break;
     case PID_HIGHPOWER:
@@ -119,13 +119,13 @@ bool Wheel::Loop()
 	} else {
 	    // The wheels are moving at speed - stop the start sequence
 	    m_controlstate = PID_LOWPOWER;
-	    m_motor.setpower( 180 );
+	    m_motor.setpower( 150 );
 	    updated = true;
 	}
 	break;
     case PID_LOWPOWER:
 	// End the start sequence phase
-	if (millis() - m_starttime > 1000) {
+	if (millis() - m_starttime > 100) {
 	    // Allow time for speed to settle down before start PID
 	    m_controlstate = PID_PIDCONTROL;
 	    // Initialise the output power settings for the PID controller

@@ -79,22 +79,22 @@ MotorMollie rightmotor(		// Right wheel DC motor controller
 
 // Construct a PID controller for the left Wheel
 MyPID leftpid(
-    0.3,			// Kp
+    0.7,			// Kp
     0.0,			// Ki
     0.0,			// Kd
     -255,			// Min output range
     255,			// Max output range
-    200				// Milliseconds between re-computation and update
+    100				// Milliseconds between re-computation and update
     );
 
 // Construct a PID controller for the left Wheel
 MyPID rightpid(
-    0.3,			// Kp
+    0.7,			// Kp
     0.0,			// Ki
     0.0,			// Kd
     -255,			// Min output range
     255,			// Max output range
-    200				// Milliseconds between re-computation and update
+    100				// Milliseconds between re-computation and update
     );
 
 // Construct the left "Wheel" from a Motor, an Encoder and a PID controller...

@@ -34,7 +34,7 @@ public:
     float    speed();                   // Return the actual wheel speed
     int      setpower( int power );	// Set the motor power
     float    power();                   // Return the motor power setting
-    int      count();                   // Return the encoder counts
+    unsigned long   count();                   // Return the encoder counts
     void     stop();                    // Stop the wheel
     void     run( float speed ) { setspeed( speed ); };
 

@@ -258,6 +258,10 @@ bool Robot::processjson( char *json )
 	    m_rightwheel.pid().setPID( Kp, Ki, Kd );
 	    m_state.pid = true;
 	    m_updated   = true;
+	} else if (!strcmp( key, "track" )) {
+	    double x = (it->value)[0];
+	    double y = (it->value)[1];
+	    dotrackingPID( x, y );
 	} else {
 	    Serial.print( F("ProcessJson() - unknown key: ") );
 	    Serial.println( key );
