@@ -9,8 +9,11 @@ from __future__ import print_function
 import itertools
 import time
 import json
+import sys
 
 import paho.mqtt.client as mqtt
+
+import arduinocomms
 
 class MqRobot( mqtt.Client ):
     """
@@ -26,7 +29,7 @@ class MqRobot( mqtt.Client ):
 
     def _on_connect( self, mqttc, obj, flags, rc ):
         print( "MQTT: Connected: rc: " + str( rc ) )
-        self.subscribe( "/mollie-robot/state", 1 )
+        self.subscribe( "/mollie-robot/target", 1 )
 
     def _on_subscribe( self, mqttc, obj, mid, granted_qos ):
         print( "MQTT: Subscribed: " + str( mid ) + " " + str( granted_qos ) )
@@ -34,7 +37,7 @@ class MqRobot( mqtt.Client ):
     def _on_message( self, mqttc, obj, msg ):
         print( "MQTT: " + msg.topic + " " +
                str( msg.qos ) + " " + str( msg.payload ) )
-        self.robot.robotstate.state( json.loads( msg.payload ) )
+        self.robot.send( self.robot.targetstate.state( json.loads( msg.payload ) ) )
 
     def _on_log( self, mqttc, obj, level, string ):
         print( "MQTT: " +  string )
@@ -48,7 +51,7 @@ class MqRobot( mqtt.Client ):
         self.disconnect()
 
     def update( self, state ):
-        self.publish( "/mollie-robot/target", state, qos=0, retain=True )
+        self.publish( "/mollie-robot/state", state, qos=0, retain=True )
 
 
 class RobotState:
@@ -104,7 +107,7 @@ class RobotState:
 
 # Construct robots with a comms object
 # Just requires a "send" method to send commands to the arduino
-class ArduinoRobot():
+class ArduinoProxy():
     """
     An interface to an Arduino controlled robot.
 
@@ -119,7 +122,7 @@ class ArduinoRobot():
         RemoteControl(c): Process a keypress as a remote control for robot.
     """
 
-    def __init__( self ):
+    def __init__( self, arduinoComms ):
         """
         Construct an interface object for the Arduino robot.
 
@@ -132,9 +135,19 @@ class ArduinoRobot():
         self.angleX     = 0
         self.angleY     = 0
         self.trackingOn = False
+        self.arduino    = arduinoComms
         self.targetstate= RobotState()
         self.robotstate = RobotState()
         self.mqrobot    = MqRobot( self )
+
+        self.arduino.setcallback( self.process_arduino_response )
+
+    def process_arduino_response( self, s ):
+        if (s[0] == "{"):
+            self.mqrobot.update( s )
+            self.robotstate.update( s )
+        else:
+            print( "Arduino: ", s )
 
     # Simple method to do range checking
     def _constrain( self, n, minn, maxn ):
@@ -151,7 +164,7 @@ class ArduinoRobot():
         Returns:
             True on success, False on falure.
         """
-        return self.mqrobot.update( command )
+        return self.arduino.send( command )
 
     # Connect to and initialise the arduino robot
     def initialise( self ):
@@ -165,40 +178,27 @@ class ArduinoRobot():
         Shutdown/close the robot.
         """
         print( "Closing down the robot..." )
+        self.arduino.close()
         self.mqrobot.close()
 
-    # Tell the robot to track to the given angles
-    def Track( self, x, y ):
-        """
-        Tell the robot controller to track the object in the given direction.
+    def loop( self ):
+        while True:
+            time.sleep( 1 )
 
-        Arguments:
-            x: Horizontal angle of the object to track.
-            y: Vertical angle of the object to track.
-        """
-        return self.send( "{track: [%d, %d]}"
-                          % (x, y) )
 
-    def TrackObject( self, posX, posY, area ):
-        """
-        Tell the robot controller to track the object if tracking is enabled.
+if __name__ == "__main__":
+    robbie = ArduinoProxy(
+        arduinocomms.ArduinoComms(
+            device       = "/dev/ttyS99",
+            baudrate     = 115200,
+            dummy        = False
+        )
+    )
 
-        Also checks the identified object is large enough.
-
-        Arguments:
-            posX: The horizontal angle of the object.
-            posY: The vertical angle of the object.
-            area: The area of the identified object.
-        """
-        # If the image is big enough - track it!!!
-        # posX *= 20.0 / 115.0    # Calibrate - convert camera pixels to degrees
-        # posY *= 20.0 / 115.0
-        # print( "track %d %d" % (posX, posY) )
-        if area > 50:
-            if self.trackingOn == True:
-                # Tell the robot to look here
-                return self.Track( posX, posY )
-        elif self.trackingOn == True:
-            # If we lost the object - tell the robot to go straight
-            if self.direction != 0 and self.speed != 0:
-                return self.Run( self.speed, 0 )
+    try:
+        robbie.initialise()
+        robbie.loop()
+        robbie.close()
+    except (KeyboardInterrupt, SystemExit):
+        robbie.close()
+        sys.exit()

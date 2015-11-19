@@ -33,14 +33,14 @@ class SerialMonitor( threading.Thread ):
     def run( self ):
         while not self.done:
             s = self.port.readline()
-            # print( "Recv: ", s, "\r\n" )
+            # print( "Recv: ", s )
             try:
                 if self.callback is not None:
                     self.callback( s )
                 else:
-                    print( "Arduino: ", s, "\r\n" )
+                    print( "Arduino: ", s )
             except ValueError as msg:
-                print( msg, s, end="\r\n" )
+                print( msg, s )
 
 
 class ArduinoComms():
@@ -81,7 +81,7 @@ class ArduinoComms():
         if self.dummy:     # For testing - do dummy writes
             print( command )   # Diagnostic
             return True
-        # print( "Send: ", command, "\r\n" )
+        # print( "Send: ", command )
         # Write the command to the arduino
         self.serialmonitor.port.write( command + "\n" )
         return True

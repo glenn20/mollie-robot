@@ -136,8 +136,7 @@ class WorkflowManager():
         """
         elapsedtime = self.finishtime - self.starttime
         count = self.count()
-        print( "\r\n" )
-        print( 'Processed %d items in %d seconds at %.2ffps\r\n'
+        print( 'Processed %d items in %d seconds at %.2ffps'
                % ( count, elapsedtime, count / elapsedtime ) )
 
     # Cleanup up all the worker threads

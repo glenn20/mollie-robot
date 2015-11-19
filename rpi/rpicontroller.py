@@ -140,16 +140,6 @@ class RobotController():
         print( *self.robotstate.listofkeys(), sep=',',
                file=self.datafile )
 
-    def process_arduino_response( self, s ):
-        if (s[0] == "{"):
-            self.mqrobot.update( s )
-            self.robotstate.update( s )
-            # Save the robotstate in the data logging file
-            print( *self.robotstate.listofvalues(), sep=',',
-                   file=self.datafile )
-        else:
-            print( "Arduino: ", s, end="\r\n" )
-
     # Simple method to do range checking
     def _constrain( self, n, minn, maxn ):
         return (minn if n < minn else
