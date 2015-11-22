@@ -28,17 +28,22 @@ class MqRobot( mqtt.Client ):
         # self.on_log       = self._on_log
 
     def _on_connect( self, mqttc, obj, flags, rc ):
-        print( "MQTT: Connected: rc: " + str( rc ), end="\r\n" )
+        print( "MQTT: Connected: rc: " + str( rc ),
+               end="\r\n" )
         self.subscribe( "/mollie-robot/state", 1 )
 
     def _on_subscribe( self, mqttc, obj, mid, granted_qos ):
-        print( "MQTT: Subscribed: " + str( mid ) + " " + str( granted_qos ) )
+        print( "MQTT: Subscribed: " + str( mid ) + " " + str( granted_qos ),
+               end="\r\n" )
 
     def _on_message( self, mqttc, obj, msg ):
         print( "MQTT: " + msg.topic + " " +
-               str( msg.qos ) + " " + str( msg.payload ) )
+               str( msg.qos ) + " " + str( msg.payload ),
+               end="\r\n" )
         # Update the robot state
         self.robot.robotstate.state( json.loads( msg.payload ) )
+        print( *self.robot.robotstate.listofvalues(), sep=',',
+               file=self.robot.datafile )
 
     def _on_log( self, mqttc, obj, level, string ):
         print( "MQTT: " +  string )
@@ -63,7 +68,7 @@ class RobotState:
         self.speed      = [0,0]
         self.counts     = [0,0]
         self.power      = [0,0]
-        self.pid        = [0.2, 0.0, 0.0 ]
+        self.pid        = [0.7, 0.0, 0.0 ]
 
     def update( self, s ):
         print( "Line =", s, end="\r\n" )

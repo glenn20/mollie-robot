@@ -21,7 +21,7 @@ class SerialMonitor( threading.Thread ):
         # Opening the serial port resets the Arduino
         # - wait till it is ready
         s = ""
-        while not s == "Robot ready\r\n":
+        while not s == "Robot ready for config\r\n":
             s = self.port.readline()
             print( "Arduino:", s, end="" )
         # Will call the run() method in a new thread...
@@ -83,7 +83,11 @@ class ArduinoComms():
             return True
         # print( "Send: ", command )
         # Write the command to the arduino
-        self.serialmonitor.port.write( command + "\n" )
+        n = self.serialmonitor.port.write( command + "\n" )
+        if (n < len( command + "\n" )):
+            print( "ArduinoComms.send(): Write() sent", n, "chars, instead of",
+                   len( command + "\n" ) )
+            print( "ArduinoComms.send(): command=", command )
         return True
 
     def close( self ):

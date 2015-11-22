@@ -102,7 +102,6 @@ class RobotState:
     def json( self ):
         return json.dumps( self.__dict__, separators=(',',':') )
 
-# Construct robots with a comms object
 # Just requires a "send" method to send commands to the arduino
 class ArduinoRobot():
     """
@@ -122,9 +121,6 @@ class ArduinoRobot():
     def __init__( self ):
         """
         Construct an interface object for the Arduino robot.
-
-        Arguments:
-            arduinoComms (ArduinoComms): I2C bus comms interface
         """
         self.speed      = 0
         self.power      = 0

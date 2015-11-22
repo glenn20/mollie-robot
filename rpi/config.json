@@ -11,7 +11,7 @@
 		"controlpin": 2         //  Arduino input pin for encoder signal 
 	    },
 	    "pid": {                    // A PID feedback controller  
-		"K": [ 0.2, 0.0, 0.0 ], //  PID params: Kp, Ki, Kd
+		"K": [ 0.7, 0.0, 0.0 ], //  PID params: Kp, Ki, Kd
 		"range": [ -255, 255],  //  Min and max output values
 		"sampletime_ms": 200    //  Milliseconds between PID update
 	    }
@@ -26,7 +26,7 @@
 		"controlpin": 3         //  Arduino input pin for encoder signal
 	    },
 	    "pid": {                    // A PID feedback controller
-		"K": [0.2, 0.0, 0.0],   //  PID params: Kp, Ki, Kd
+		"K": [0.7, 0.0, 0.0],   //  PID params: Kp, Ki, Kd
 		"range": [-255, 255],   //  Min and max output values
 		"sampletime_ms": 200    //  Milliseconds between PID update
 	    }
@@ -34,11 +34,11 @@
 	
 	// Construct the Head from two servo controllers
 	"head": {
-	    "HeadX": {                  // Servo for left-right rotation
+	    "X":     {                  // Servo for left-right rotation
 		"controlpin": 10,       //  Arduino control pin for servo
 		"range": [18, 68, 116]  //  Min, Centre, Max for servo
 	    },
-	    "HeadY": {                  // Servo for left-right rotation
+	    "Y": {                      // Servo for up-down rotation
 		"controlpin": 9,        //  Arduino control pin for servo
 		"range": [24, 54, 106]  //  Min, Centre, Max for servo
 	    }

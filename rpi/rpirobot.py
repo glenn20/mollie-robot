@@ -19,10 +19,6 @@ parser.add_argument(
     help="Show the pi-camera preview window"
     )
 parser.add_argument(
-    "--norobot", action="store_true",
-    help="Don't really send commands to the arduino robot - fake it"
-    )
-parser.add_argument(
     "--nocamera", action="store_true",
     help="Do not use the Raspberry Pi camera"
     )
@@ -39,21 +35,12 @@ args = parser.parse_args()
 import picamera
 
 import arduinorobot
-import arduinocomms
 import colourtracker
 import trackingrobot
 import hsvvalues
 
-# Create a Robot instance talking on the arduino Bus
-# I2Cbusnumber = 0 if RPI_version=1 else 1 if RPI_version=2
-# I2Caddress of the arduino board - as set in arduinoRobot program
-robot = arduinorobot.ArduinoRobot(
-    arduinocomms.ArduinoComms(
-        device       = "/dev/ttyS99",
-        baudrate     = 115200,
-        dummy        = args.norobot
-        )
-    )
+# Create a Robot instance
+robot = arduinorobot.ArduinoRobot()
 
 # Create a ColourTracker instance to track objects
 tracker = colourtracker.ColourTracker(

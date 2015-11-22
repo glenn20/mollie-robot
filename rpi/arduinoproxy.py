@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 An interface to manage an Arduino controlled robot.
 
@@ -5,17 +7,29 @@ Classes:
     ArduinoRobot: The manager of the Arduino robot.
 """
 
+import argparse
+import sys
+
+parser = argparse.ArgumentParser(
+    description='Run the RPI-arduino proxy control program.'
+    )
+parser.add_argument(
+    "--verbose", action="store_true",
+    help="Print diagnostic output"
+    )
+args = parser.parse_args()
+
+
 from __future__ import print_function
 import itertools
 import time
 import json
-import sys
-
-import paho.mqtt.client as mqtt
+import jsmin
+import paho.mqtt.client
 
 import arduinocomms
 
-class MqRobot( mqtt.Client ):
+class MqRobot( paho.mqtt.client.Client ):
     """
     A simple wrapper to send robot status messages to the MQTT broker
     """
@@ -35,9 +49,15 @@ class MqRobot( mqtt.Client ):
         print( "MQTT: Subscribed: " + str( mid ) + " " + str( granted_qos ) )
 
     def _on_message( self, mqttc, obj, msg ):
-        print( "MQTT: " + msg.topic + " " +
-               str( msg.qos ) + " " + str( msg.payload ) )
-        self.robot.send( self.robot.targetstate.state( json.loads( msg.payload ) ) )
+        if args.verbose:
+                print( "MQTT: " + msg.topic + " " +
+                       str( msg.qos ) + " " + str( msg.payload ) )
+        try:
+            d = {"target": json.loads( msg.payload )}
+            s = self.robot.targetstate.state( d )
+            self.robot.send( s )
+        except ValueError as e:
+            print( e, msg.payload )
 
     def _on_log( self, mqttc, obj, level, string ):
         print( "MQTT: " +  string )
@@ -65,10 +85,10 @@ class RobotState:
         self.pid        = [0.2, 0.0, 0.0 ]
 
     def update( self, s ):
-        print( "Line =", s )
+        if args.verbose:
+            print( "Line =", s )
         d = json.loads( s )
         self.__dict__.update( d )
-        # print( "Robot =", self.__dict__ )
         return d
 
     def listofvalues( self ):
@@ -99,7 +119,6 @@ class RobotState:
         s = json.dumps( d, separators=(',',':') )
         self.__dict__.update( d )
         self.time = time.time()
-        # print( "Target=", self.__dict__ )
         return s
 
     def json( self ):
@@ -144,10 +163,10 @@ class ArduinoProxy():
 
     def process_arduino_response( self, s ):
         if (s[0] == "{"):
-            self.mqrobot.update( s )
             self.robotstate.update( s )
+            self.mqrobot.update( s )
         else:
-            print( "Arduino: ", s )
+            print( "Arduino: ", s, end="" )
 
     # Simple method to do range checking
     def _constrain( self, n, minn, maxn ):
@@ -195,8 +214,23 @@ if __name__ == "__main__":
         )
     )
 
+    robbie.initialise()
+
+    # Load and send configuration to the robot.
+    with open( 'config.json', 'r' ) as f:
+        d = json.loads( jsmin.jsmin( f.read() ) )
+
+    # Break up the config dictionary into parts
+    for key, value in d["config"].iteritems():
+        for key2, value2 in value.iteritems():
+            s = json.dumps( {"config": {key: {key2: value2}}},
+                            separators=(',',':') )
+            if args.verbose:
+                print( "Config: ", s )
+            robbie.send( s )
+            # time.sleep( 1 )
+
     try:
-        robbie.initialise()
         robbie.loop()
         robbie.close()
     except (KeyboardInterrupt, SystemExit):

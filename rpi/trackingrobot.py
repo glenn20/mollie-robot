@@ -32,7 +32,7 @@ class TrackingRobot():
     run() : 
     """
     def __init__( self, robot, tracker, camera,
-                  show_images = False, showpreview = False ):
+                  showimages = False, showpreview = False ):
         """
         Construct a robot which tracks objects using the RPI camera.
 
@@ -44,7 +44,7 @@ class TrackingRobot():
         self.robot           = robot
         self.tracker         = tracker
         self.camera          = camera
-        self.show_images     = show_images
+        self.showimages      = showimages
         self.showpreview     = showpreview
 
         self.done            = False
@@ -76,7 +76,7 @@ class TrackingRobot():
         if self.tracker.Track( image ):
             # Send the coordinates to the robot - if we found our target
             self.robot.TrackObject( *image.track )
-        if self.show_images:
+        if self.showimages:
             try:
                 # Put on the display queue - unless it is full (only takes one).
                 otherqueues[0].put_nowait( image )
@@ -107,7 +107,7 @@ class TrackingRobot():
                     self.displayimage,    # Function to display the image
                     self.displayqueue,    # Input queue for Images to display
                     self.cameraqueue      # Output queue to recycle Images
-                ) if self.show_images else None
+                ) if self.showimages else None
             ]
         )
 
