@@ -25,10 +25,7 @@ public:
 	String      name = "Wheel"
 	);
 
-    void     initialise();
     void     close();
-    void     enable();                  // Enable the wheel motor
-    void     disable();                 // Disable the wheel motor
     float    setspeed( float speed );   // Set the target speed (in RPM)
     float    setspeed();                // Return the target speed
     float    speed();                   // Return the actual wheel speed

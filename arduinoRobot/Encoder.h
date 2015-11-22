@@ -3,16 +3,14 @@
 #ifndef ENCODER_H
 #define ENCODER_H
 
-static const unsigned int NPULSES = 9;
+static const unsigned int NPULSES = 8;
 
 // An "Encoder" counts pulses and calculates wheel speed
 class Encoder {
 public:
-    Encoder( int   controlpin,
-	     void  (*interruptfunction)()
-	);
-  
-    void     initialise();
+    Encoder( void (*interruptfunction)() );
+
+    void     initialise( int controlpin );
     void     close();
     bool     valid();      // Return true if this a valid encoder
     void     update();     // Interrupt routine - record the encoder count
@@ -26,13 +24,8 @@ private:
     int                    m_controlpin;
     void                   (*m_interruptfunction)();
     volatile unsigned long m_count;          // Total number of pulses recorded
+    volatile unsigned long m_deltat;         // Time between last npulses
     volatile unsigned long m_lasttime;       // The time of the last pulse
-    volatile unsigned int  m_ndx;            // Where to put next pulse time
-    volatile unsigned int  m_npulses;        // # of pulses recorded in array
-    volatile unsigned long m_ntime;          // Time between last npulses
-    volatile float         m_speed;	     // The speed in counts per sec
-    volatile bool          m_reset;
-    volatile unsigned long m_times[NPULSES]; // Times of the last nine pulses
 };
 
 #endif // ENCODER_H

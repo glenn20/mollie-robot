@@ -7,18 +7,24 @@
 
 class MyPID {
 public:
-    MyPID( float Kp, float Ki, float Kd,
-	   double min = 0, double max = 255, int sampletime_ms = 100
-	)
-	: m_pid( &m_actual, &m_output, &m_target, Kp, Ki, Kd, DIRECT ),
+    MyPID()
+	: m_pid( &m_actual, &m_output, &m_target, 0.0, 0.0, 0.0, DIRECT ),
 	  m_actual( 0.0 ),
 	  m_target( 0.0 ),
 	  m_output( 0.0 )
 	{
-	    m_pid.SetOutputLimits( min, max );
 	    m_pid.SetMode(AUTOMATIC);
-	    m_pid.SetSampleTime( sampletime_ms );
 	};
+    
+    void initialise(
+	float Kp, float Ki, float Kd,
+	double min = 0, double max = 255, int sampletime_ms = 100
+	) {
+	m_pid.SetTunings( Kp, Ki, Kd );
+	m_pid.SetOutputLimits( min, max );
+	m_pid.SetMode( AUTOMATIC );
+	m_pid.SetSampleTime( sampletime_ms );
+    };
     
     bool UpdatePID( double  target,
 		    double  actual
@@ -46,6 +52,10 @@ public:
     void setPID( double Kp, double Ki, double Kd ) {
 	m_pid.SetTunings( Kp, Ki, Kd );
     };
+
+    void setSampletime( int sampletime_ms ) {
+	m_pid.SetSampleTime( sampletime_ms );
+    }
 
     double Kp() { return m_pid.GetKp(); };
     double Ki() { return m_pid.GetKi(); };

@@ -6,25 +6,39 @@
 
 // Implementation of the Motor class using the AdaFruit Motor Shield.
 
-// Constructor - uses 3 Arduino pins for each motor:
-//  - Control Pin 1    (Digital Output - sets motor direction)
-//  - Control Pin 2    (Digital Output - sets motor direction)
-//  - Enable Pin       (PWM - sets motor power levels (voltage))
-MotorAFMotor::MotorAFMotor( int motornum )
-    : m_motor     ( motornum, MOTOR12_64KHZ ),
-      m_motornum  ( motornum ),
+// Constructor
+MotorAFMotor::MotorAFMotor()
+    : m_motor     ( NULL ),
       m_forwardp  ( false )
 {
 }
 
 // Initialise the motor
-void MotorAFMotor::doinitialise()
+void MotorAFMotor::doinitialise( int motornum )
 {
-    m_motor.run( m_forwardp ? FORWARD : BACKWARD );
+    // If already initialise - de-initialise
+    close();
+
+    // Prefer not to allocate from heap in an embedded system, but the
+    // AF_DCMotor class leaves us no other option when we need to configure
+    // after instantiation.
+    m_motor = new AF_DCMotor( motornum, MOTOR12_64KHZ );
+	
+    m_motor->setSpeed( 0 );
+    m_motor->run( m_forwardp ? FORWARD : BACKWARD );
     setpower( 0 );
  
     Serial.print( F("AFMotor::initialise: motornum = ") );
-    Serial.println( m_motornum );
+    Serial.println( motornum );
+}
+
+// Initialise the motor
+void MotorAFMotor::doclose()
+{
+    if (m_motor != NULL) {
+	free( m_motor );
+	m_motor = NULL;
+    }
 }
 
 // Implementation of the abstract base method to set the motor power
@@ -35,13 +49,16 @@ int MotorAFMotor::dosetpower( int power )
 	power = -255;
     if (power > 255)
 	power = 255;
+    if (m_motor == NULL) {
+	return power;
+    }
     bool forwardp = (power >= 0);
     if (m_forwardp != forwardp) {
 	// If we have changed direction - set the H-bridge direction control
 	m_forwardp = forwardp;
-	m_motor.run( forwardp ? FORWARD : BACKWARD );
+	m_motor->run( forwardp ? FORWARD : BACKWARD );
     }
-    m_motor.setSpeed( m_forwardp ? power : -power );
+    m_motor->setSpeed( m_forwardp ? power : -power );
     return power;
 }
 

@@ -4,31 +4,32 @@
 
 #include "Encoder.h"
 
-Encoder::Encoder( int   controlpin,
-		  void  (*interruptfunction)()
-    )
-    : m_controlpin        ( controlpin ),
+Encoder::Encoder( void (*interruptfunction)() )
+    : m_controlpin        ( 0 ),
       m_interruptfunction ( interruptfunction ),
       m_count             ( 0 ),
-      m_lasttime          ( 0 ),
-      m_ndx               ( 0 ),
-      m_npulses           ( 0 ),
-      m_ntime             ( 0 ),
-      m_speed		  ( 0.0 ),
-      m_reset		  ( false )
+      m_deltat		  ( 0 ),
+      m_lasttime          ( 0 )
 {
 }
 
-void Encoder::initialise()
+void Encoder::initialise( int controlpin )
 {
+    // If already initialised, de-initialise...
     if (m_controlpin >= 0) {
-	// Set pullup resistors for Encoder
-	digitalWrite( m_controlpin, 1 );
-    
+	close();
+    }
+
+    m_controlpin = controlpin;
+    m_count = m_deltat = m_lasttime = 0;
+
+    if (m_controlpin >= 0) {
+	pinMode( m_controlpin, INPUT_PULLUP );
+	// digitalWrite( m_controlpin, 1 );   // Set pullup resistors for Encoder
 	// Set the encoder interrupts to call the interruptfunction
 	attachInterrupt( digitalPinToInterrupt( m_controlpin ),
 			 m_interruptfunction,
-			 CHANGE );
+			 RISING );
 	Serial.print( F("Encoder::initialise: controlpin=") );
 	Serial.print( m_controlpin );
 	Serial.print( F(" interrupt=") );
@@ -68,50 +69,38 @@ bool Encoder::valid()
 // Function to call from the arduino interrupt to register a pulse
 void Encoder::update()
 {
+    if (++m_count % NPULSES != 0) {
+	// Just keep counting pulses till we have enough to measure speed
+	return;
+    }
     unsigned long t = micros();
-    // If more than 0.5 seconds since last pulse, reset the counters
-    if (m_reset) {
-	m_reset     = false;
-	m_ntime     = 0;
-	m_ndx       = 0;
-	m_npulses   = 0;
-	m_speed     = 0.0;
+    if (m_lasttime != 0) {
+	m_deltat = t - m_lasttime;
     }
     m_lasttime = t;
-    m_count++;
-    m_times[m_ndx] = t;
-    if (m_npulses < NPULSES) {
-	m_npulses++;
-    }
-    if (m_npulses >= 2) {
-	// Difference between this reading and the oldest reading in the buffer
-	m_ntime = m_times[m_ndx] - m_times[(m_ndx + 1) % m_npulses];
-	m_speed = (1000000.0 * (m_npulses - 1)) / m_ntime / 48;
-    } else {
-	m_ntime = 0;
-	m_speed = 0.0;
-    }
-    m_ndx = (m_ndx + 1) % NPULSES;
 }
 
 // Return the speed in pulses per second
 float Encoder::speed()
 {
-    if (!valid()) {
+    if (!valid() || m_lasttime == 0) {
+	// Wheel is at rest - or no encoder present
 	return 0.0;
     }
-    // If more than 2 seconds since last pulse, reset the counters
-    if ((micros() - m_lasttime) > 200000 && m_ntime != 0) {
-	m_reset = true;
+    if ((micros() - m_lasttime) > 200000) {
+	// If more than 0.2 seconds since last pulse, set the Wheel to be at rest
+	m_lasttime = 0;
 	return 0.0;
     }
 
-    return m_speed;
+    unsigned long deltat = m_deltat;
+    return (deltat > 0 ? (NPULSES / (deltat / 1000000.0)) / 24.0 : 0.0);
 }
 
 bool Encoder::moving()
 {
-    return (micros() - m_lasttime) < 200000;
+    unsigned long lasttime = m_lasttime;
+    return (lasttime != 0) && (micros() - lasttime) < 200000;
 }
 
 unsigned long Encoder::count()

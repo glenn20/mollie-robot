@@ -11,31 +11,20 @@ class Motor {
 public:
     Motor() {};
 
-    void  initialise() {
-	doinitialise();
+    void initialise( int motornum ) {
+	doinitialise( motornum );
     };
     void  close() {
 	setpower( 0 );
+	doclose();
     };
-    int   setpower( int power ) { // Set the motor power
+    int setpower( int power ) { // Set the motor power
 	if (power == m_power) {
 	    return power;
 	}
 	return m_power = dosetpower( power );
     };
-    void  enable() {              // Enable the motor
-	if (!m_enabled) {
-	    m_enabled = true;
-	    setpower( m_power );
-	}
-    }; 
-    void  disable() {             // Disable the motor
-	if (m_enabled) {
-	    m_enabled = false;
-	    setpower( 0 );
-	}
-    };
-    int   power() {               // Return the current power setting
+    int power() {               // Return the current power setting
 	return m_power;
     };
 
@@ -44,12 +33,13 @@ private:
     virtual int  dosetpower( int power ) {
 	return power;
     };
-    virtual void doinitialise() {
+    virtual void doinitialise( int motornum ) {
+    };
+    virtual void doclose() {
     };
 
 private:
     int      m_power;
-    bool     m_enabled;
 };
 
 #endif //MOTOR_H

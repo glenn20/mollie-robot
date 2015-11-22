@@ -11,18 +11,19 @@
 
 class MotorAFMotor: public Motor {
 public:
-    MotorAFMotor( int motornum );
+    MotorAFMotor();
 
 private:
     // Setup the control and enable pins on the arduino
-    void  doinitialise();
+    void  doinitialise( int motornum );
+
+    void  doclose();
 
     // Write the power setting to the (PWM) Enable pin on H-Bridge
     int   dosetpower( int power );   // Set the wheel power (-255->255)
 
 private:
-    AF_DCMotor m_motor;
-    int        m_motornum;
+    AF_DCMotor *m_motor;
     bool       m_forwardp;
 };
 

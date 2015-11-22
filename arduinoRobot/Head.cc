@@ -4,22 +4,31 @@
 
 #include <Arduino.h>
 
-HeadServo::HeadServo(
-    int    servopin,
-    int    origin,
-    int    min,
-    int    max 
-    ) : m_servo   ( ),
-	m_angle   ( 0.0 ),
-	m_servopin( servopin ),
-	m_origin  ( origin ),
-	m_min     ( min ),
-	m_max     ( max )
+HeadServo::HeadServo()
+    : m_servo   ( ),
+      m_angle   ( 0.0 ),
+      m_servopin( 0 ),
+      m_min     ( 0 ),
+      m_origin  ( 0 ),
+      m_max     ( 0 )
 {
 }
 
-void HeadServo::initialise()
+void HeadServo::initialise(
+    int    servopin,
+    int    min,
+    int    origin,
+    int    max 
+    )
 {
+    if (m_servopin > 0) {
+	close();
+    }
+    m_servopin = servopin;
+    m_min      = min;
+    m_origin   = origin;
+    m_max      = max;
+
     if (m_servopin > 0) {
 	m_servo.attach( m_servopin );
     }
@@ -66,12 +75,6 @@ Head::Head(
     m_servoX    ( servox ),
     m_servoY    ( servoy )
 {
-}
-
-void Head::initialise()
-{
-    m_servoX.initialise();
-    m_servoY.initialise();
 }
 
 void Head::close()

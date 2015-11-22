@@ -21,26 +21,10 @@ Wheel::Wheel(
 {
 }
 
-void Wheel::initialise()
-{
-    m_motor.initialise();
-    m_encoder.initialise();
-}
-
 void Wheel::close()
 {
     m_motor.close();
     m_encoder.close();
-}
-
-void Wheel::enable()
-{
-    m_motor.enable();
-}
-
-void Wheel::disable()
-{
-    m_motor.disable();
 }
 
 float Wheel::setspeed( float speed )
@@ -114,7 +98,7 @@ bool Wheel::Loop()
 	if (!(m_encoder.count() > m_startcount)) {
 	    // First the high power - ramp up phase
 	    // Keep ramping up power till the motors start moving 
-	    //m_motor.setpower( 160 + (millis() - m_starttime) * 0.01 );
+	    //m_motor.setpower( 200 + (millis() - m_starttime) * 0.01 );
 	    //updated = true;
 	} else {
 	    // The wheels are moving at speed - stop the start sequence

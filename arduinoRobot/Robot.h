@@ -15,7 +15,9 @@ public:
 	  setspeed ( false ),
 	  speed    ( false ),
 	  counts   ( false ),
-	  pid      ( false ) {
+	  pid      ( false ),
+	  config   ( false )
+	{
     };
 
 public:
@@ -25,6 +27,7 @@ public:
     bool speed;
     bool counts;
     bool pid;
+    bool config;
 };
 
 // A "Robot" is built from a "Head" and two "Wheels"
@@ -40,10 +43,7 @@ public:
     void     look( float angleX, float angleY );
     void     look( float angleX );
 
-    void     initialise();
     void     close();
-    void     enable();
-    void     disable();
     int      leftspeed();
     int      rightspeed();
     int      speed();
@@ -62,7 +62,8 @@ public:
     void     updatecounts();
     void     updatepid();
 
-    bool     processjson( char* json );
+    bool     processtarget( JsonObject& d );
+    bool     processjson( const char* json );
     bool     sendstate();
 
     Wheel&   leftwheel()  { return m_leftwheel;  };

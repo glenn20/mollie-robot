@@ -24,6 +24,9 @@ LOCAL_AS_SRCS   ?=
 
 include $(ARDMK_DIR)/Arduino.mk
 
+tags:
+	etags *.cc *h *.ino
+
 # This is an override of Arduino.mk so "make do_upload" won't
 # second guess ARDUINO_PORT - I need this to use avrdude-scp
 get_monitor_port = $(ARDUINO_PORT)

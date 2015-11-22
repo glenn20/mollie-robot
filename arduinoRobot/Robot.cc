@@ -7,6 +7,7 @@
 #include <MemoryFree.h>
 
 #include "Robot.h"
+#include "Setup.h"
 
 Robot::Robot( Wheel&       leftwheel,
 	      Wheel&       rightwheel,
@@ -20,32 +21,12 @@ Robot::Robot( Wheel&       leftwheel,
 {
 }
 
-void Robot::initialise()
-{
-    m_leftwheel.initialise();
-    m_rightwheel.initialise();
-    m_head.initialise();
-    m_updated = true;
-}
-
 void Robot::close()
 {
     m_leftwheel.close();
     m_rightwheel.close();
     m_head.close();
 }
-
-void Robot::enable()
-{
-    m_leftwheel.enable();
-    m_rightwheel.enable();
-}
-
-void Robot::disable()
-{
-    m_leftwheel.disable();
-    m_rightwheel.disable();
-};
 
 int Robot::leftspeed()
 {
@@ -166,30 +147,17 @@ void Robot::dotrackingPID( int x, int y )
 // Returns true if any action was taken, else return false.
 bool Robot::robotcommand( char* line )
 {
-    char command[20] = "";// A string to hold the command
-    int  numbers[8];      // The list of numbers following the command
-
+    bool updated = false;
+    //Serial.println( F("RobotCommand():") );
+    //Serial.flush();
+    
     if (line[0] == '{') {
-	bool updated = processjson( line );
-	return updated;
-    }
-
-    // Every command starts with the <command>, then up to eight integer numbers
-    int n = sscanf( line, "%20s %d %d %d %d %d %d %d %d", 
-		    command, 
-		    &numbers[0], &numbers[1], &numbers[2], &numbers[3], 
-		    &numbers[4], &numbers[5], &numbers[6], &numbers[7] );
-    String cmd = command;
-    n--;
-    if (cmd == "track" && n == 2) {
-	// int anglex = numbers[0];
-	// int angley = numbers[1];
-	// look( anglex, angley );
-	dotrackingPID( numbers[0], numbers[1] );
+	updated = processjson( line );
     } else {
 	Serial.print( "Unknown robot command: " ); Serial.println( line );
     }
-    return true;
+
+    return updated;
 }
 
 bool Robot::Loop()
@@ -221,19 +189,9 @@ bool Robot::Loop()
     return status;
 }
 
-bool Robot::processjson( char *json )
+bool Robot::processtarget( JsonObject& d )
 {
-    // The internal buffer for the Json objects
-    StaticJsonBuffer<150> jsonBuffer;
-
-    JsonObject& root = jsonBuffer.parseObject( json );
-    
-    if (!root.success()) {
-	Serial.print( "Processing Json: parseObject() failed:" ); Serial.println( json );
-	return false;
-    }
-
-    for (JsonObject::iterator it=root.begin(); it != root.end(); ++it) {
+    for (JsonObject::iterator it=d.begin(); it != d.end(); ++it) {
 	const char* key = it->key;
 	if        (!strcmp( key, "head" )) {
 	    double x = (it->value)[0];
@@ -258,29 +216,50 @@ bool Robot::processjson( char *json )
 	    m_rightwheel.pid().setPID( Kp, Ki, Kd );
 	    m_state.pid = true;
 	    m_updated   = true;
+	} else {
+	    Serial.print( F("processtarget() - unknown key: ") );
+	    Serial.println( key );
+	}
+    }
+
+    return true;
+}
+
+bool Robot::processjson( const char *json )
+{
+    if (freeMemory() < 100) {
+	Serial.print( F("Warning: processjson(): Free SRAM low (Bytes) = ") );
+	Serial.println( freeMemory() );
+    }
+
+    // The internal buffer for the Json objects
+    StaticJsonBuffer<300> jsonBuffer;
+
+    JsonObject& root = jsonBuffer.parseObject( json );
+
+    if (!root.success()) {
+	Serial.print( "Processing Json: parseObject() failed:" );
+	Serial.println( json );
+	return false;
+    }
+
+    for (JsonObject::iterator it=root.begin(); it != root.end(); ++it) {
+	const char* key = it->key;
+	if        (!strcmp( key, "target" )) {
+	    JsonObject& value = it->value;
+	    processtarget( value );
 	} else if (!strcmp( key, "track" )) {
 	    double x = (it->value)[0];
 	    double y = (it->value)[1];
 	    dotrackingPID( x, y );
+	} else if (!strcmp( key, "config" )) {
+	    JsonObject& config = it->value;
+	    ConfigRobot( config );
+	    m_state.config = true;
 	} else {
-	    Serial.print( F("ProcessJson() - unknown key: ") );
+	    Serial.print( F("ProcessJson() - unknown key ignored: ") );
 	    Serial.println( key );
 	}
-	// if (key == "head") {
-	//     look( (it->value)[0], (it->value)[1] );
-	// } else if (key == "setspeed") {
-	//     run( (it->value)[0], (it->value)[1] );
-	// } else if (key == "power") {
-	//     setpower( (it->value)[0], (it->value)[1] );
-	// } else if (key == "pid") {
-	//     m_leftwheel .pid().setPID( (it->value)[0],
-	// 			       (it->value)[1],
-	// 			       (it->value)[2] );
-	//     m_rightwheel.pid().setPID( (it->value)[0],
-	// 			       (it->value)[1],
-	// 			       (it->value)[2] );
-	//     m_updated = true;
-	// } // Silently ignore any other json keys - for now
     }
 
     return true;

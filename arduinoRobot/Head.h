@@ -10,13 +10,13 @@
 // This class trivially wraps the Arduino Servo class.
 class HeadServo {
 public:
-    HeadServo( int servopin,
-	       int origin = 90,
-	       int min    = 0,
-	       int max    = 180
-	);
+    HeadServo();
 
-    void  initialise();
+    void  initialise( int servopin,
+		      int min    = 0,
+		      int origin = 90,
+		      int max    = 180 );
+
     void  close();
     float setangle( float angle );
     float angle();
@@ -43,7 +43,6 @@ public:
 	HeadServo&  servoy
 	);
 
-    void     initialise();
     void     close();
     float    lookX( float angleX );  // Turn head to the given angle
     float    lookY( float angleY );  // Turn head to the given angle

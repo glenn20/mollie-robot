@@ -3,6 +3,7 @@
 #include <Arduino.h>
 
 #include <MemoryFree.h>
+#include <ArduinoJson.h>
 
 #define USEAFMOTOR
 
@@ -41,12 +42,10 @@ void rightEncoderISR();
 
 // Start assembling Robbie the robot from the ground up...
 Encoder leftencoder (		// Left wheel encoder
-    2,				//   Arduino input pin for the encoder signal
     leftEncoderISR		//   Interrupt service routine for this encoder
     );
 
 Encoder rightencoder(		// Right wheel encoder
-    3,				//   Arduino input pin for the encoder signal
     rightEncoderISR		//   Interrupt service routine for this encoder
     );
 
@@ -58,12 +57,8 @@ MotorMicroM rightmotor(		// Right wheel DC motor controller
     false			//   This NOT the left motor on the controller
     );
 #elif defined(USEAFMOTOR)
-MotorAFMotor leftmotor(		// Left wheel DC motor controller
-    3				//   Left wheel attached to Motor 3
-    );
-MotorAFMotor rightmotor(	// Right wheel DC motor controller
-    4				//   Right wheel attached to Motor 4
-    );
+MotorAFMotor leftmotor;	// Left wheel DC motor controller
+MotorAFMotor rightmotor;	// Right wheel DC motor controller
 #else
 MotorMollie leftmotor(		// Left wheel DC motor controller
     7,				// Arduino pin for first  H-Bridge control pin
@@ -78,24 +73,10 @@ MotorMollie rightmotor(		// Right wheel DC motor controller
 #endif
 
 // Construct a PID controller for the left Wheel
-MyPID leftpid(
-    0.7,			// Kp
-    0.0,			// Ki
-    0.0,			// Kd
-    -255,			// Min output range
-    255,			// Max output range
-    100				// Milliseconds between re-computation and update
-    );
+MyPID leftpid;
 
 // Construct a PID controller for the left Wheel
-MyPID rightpid(
-    0.7,			// Kp
-    0.0,			// Ki
-    0.0,			// Kd
-    -255,			// Min output range
-    255,			// Max output range
-    100				// Milliseconds between re-computation and update
-    );
+MyPID rightpid;
 
 // Construct the left "Wheel" from a Motor, an Encoder and a PID controller...
 Wheel leftwheel   (
@@ -115,20 +96,10 @@ Wheel rightwheel  (
 
 // Construct the servo motor controllers for the robot's head
 // HeadX turns head left and right
-HeadServo headX (
-    10,				// Arduino PWM pin for the rotation servo
-    68,				//   origin: Servo setting for straight ahead
-    18,				//   min: Minimum servo setting
-    116				//   max: Maximum servo setting
-    );
+HeadServo headX;
 
 // HeadY tilts head up and down
-HeadServo headY (
-    9,				// Arduino PWM pin for the rotation servo
-    54,				//   origin: Servo setting for straight ahead
-    24,				//   min: Minimum servo setting
-    106				//   max: Maximum servo setting
-    );
+HeadServo headY;
 
 // Construct the Head controller from the two servo controllers
 Head  head        (
@@ -181,6 +152,76 @@ Robot robbie      (
 // 	)
 //     );
 
+void ConfigRobot( JsonObject& config )
+{
+    if (config.containsKey("leftwheel")) {
+	JsonObject& d = config["leftwheel"];
+	if (d.containsKey("AFMotor")) {
+	    leftmotor.initialise(
+		d["AFMotor"]["motornum"] );
+	}
+	if (d.containsKey("encoder")) {
+	    leftencoder.initialise(
+		d["encoder"]["controlpin"] );
+	}
+	if (d.containsKey("pid")) {
+	    JsonObject& d2 = d["pid"];
+	    if (d2.containsKey("K")) {
+		leftpid.setPID( d2["K"][0], d2["K"][1], d2["K"][2] );
+	    }
+	    if (d2.containsKey("range")) {
+		leftpid.setlimits( d2["range"][0],
+				   d2["range"][1] );
+	    }
+	    if (d2.containsKey("sampletime_ms")) {
+		leftpid.setSampletime( d2["sampletime_ms"] );
+	    }
+	}
+    }
+    
+    if (config.containsKey("rightwheel")) {
+	JsonObject& d = config["rightwheel"];
+	if (d.containsKey("AFMotor")) {
+	    rightmotor.initialise(
+		d["AFMotor"]["motornum"] );
+	}
+	if (d.containsKey("encoder")) {
+	    rightencoder.initialise(
+		d["encoder"]["controlpin"] );
+	}
+	if (d.containsKey("pid")) {
+	    JsonObject& d2 = d["pid"];
+	    if (d2.containsKey("K")) {
+		rightpid.setPID( d2["K"][0], d2["K"][1], d2["K"][2] );
+	    }
+	    if (d2.containsKey("range")) {
+		rightpid.setlimits( d2["range"][0],
+				    d2["range"][1] );
+	    }
+	    if (d2.containsKey("sampletime_ms")) {
+		rightpid.setSampletime( d2["sampletime_ms"] );
+	    }
+	}
+    }
+
+    if (config.containsKey("head")) {
+	JsonObject& d = config["head"];
+	if (d.containsKey("X")) {
+	    headX.initialise(
+		d["X"]["controlpin"],
+		d["X"]["range"][0],
+		d["X"]["range"][1],
+		d["X"]["range"][2] );
+	}
+	if (d.containsKey("Y")) {
+	    headY.initialise(
+		d["Y"]["controlpin"],
+		d["Y"]["range"][0],
+		d["Y"]["range"][1],
+		d["Y"]["range"][2] );
+	}
+    }
+}
 
 // Load the interrupt service routines for the left and right wheel encoders
 void leftEncoderISR()  {robbie.leftwheel ().encoder().update(); }
@@ -194,13 +235,11 @@ void SetupRobot()
     SetupComms_serial();
 
     // Initialise the Robot motors
-    robbie.initialise();
-    robbie.enable();
     Serial.print( F("Free SRAM (Bytes) = ") );
     freeram = freeMemory();
-    Serial.println( freeMemory() );
+    Serial.println( freeram );
     delay(1);
-    Serial.println( F("Robot ready") );
+    Serial.println( F("Robot ready for config") );
 }
 
 void LoopRobot()
@@ -214,6 +253,7 @@ void LoopRobot()
     // Update the Robot...
     if (robbie.Loop()) {
 	if (freeMemory() != freeram) {
+	    // Warn about apparent memory leaks on each arduino loop.
 	    freeram = freeMemory();
 	    Serial.print( F("Warning: Free SRAM (Bytes) = ") );
 	    Serial.println( freeMemory() );
