@@ -63,7 +63,7 @@ MotorAFMotor rightmotor;	// Right wheel DC motor controller
 MotorMollie leftmotor(		// Left wheel DC motor controller
     7,				// Arduino pin for first  H-Bridge control pin
     4,				// Arduino pin for second H-Bridge control pin
-    6				// Arduino PWN pin for H-Bridge Enable pin
+    6				// Arduino PWM pin for H-Bridge Enable pin
     );
 MotorMollie rightmotor(		// Right wheel DC motor controller
     5,				// Arduino pin for first  H-Bridge control pin

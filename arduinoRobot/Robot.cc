@@ -169,7 +169,7 @@ bool Robot::Loop()
 
     unsigned long thistime = millis();
 
-    if ((thistime - lasttime > 500) &&
+    if ((thistime - lasttime > 100) &&
 	((leftupdate || rightupdate) ||
 	 (m_leftwheel.encoder().moving() || m_rightwheel.encoder().moving()))) {
 	m_state.speed  = true;
@@ -179,7 +179,6 @@ bool Robot::Loop()
     }
 
     if (sendstate()) {
-	Serial.flush();
 	lasttime = thistime;
     }
 
