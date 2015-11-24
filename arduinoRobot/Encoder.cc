@@ -4,6 +4,8 @@
 
 #include "Encoder.h"
 
+static const unsigned int NPULSES = 8;
+
 Encoder::Encoder( void (*interruptfunction)() )
     : m_controlpin        ( 0 ),
       m_interruptfunction ( interruptfunction ),
@@ -83,13 +85,19 @@ void Encoder::update()
 // Return the speed in pulses per second
 float Encoder::speed()
 {
-    if (!valid() || m_lasttime == 0) {
+    unsigned long lasttime = m_lasttime;
+    unsigned long t = micros();
+    if (!valid() || lasttime == 0) {
 	// Wheel is at rest - or no encoder present
 	return 0.0;
     }
-    if ((micros() - m_lasttime) > 200000) {
-	// If more than 0.2 seconds since last pulse, set the Wheel to be at rest
+    if (t > lasttime && (t - lasttime) > 500000) {
+	// If more than 0.5 seconds since last pulse, set the Wheel to be at rest
 	m_lasttime = 0;
+	Serial.print( "Wheel is stopping: " );
+	Serial.print( t );
+	Serial.print( " " );
+	Serial.println( lasttime );
 	return 0.0;
     }
 
@@ -100,7 +108,8 @@ float Encoder::speed()
 bool Encoder::moving()
 {
     unsigned long lasttime = m_lasttime;
-    return (lasttime != 0) && (micros() - lasttime) < 200000;
+    unsigned long t = micros();
+    return (lasttime != 0) && t < lasttime && (t - lasttime) < 200000;
 }
 
 unsigned long Encoder::count()

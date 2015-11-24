@@ -3,8 +3,6 @@
 #ifndef ENCODER_H
 #define ENCODER_H
 
-static const unsigned int NPULSES = 8;
-
 // An "Encoder" counts pulses and calculates wheel speed
 class Encoder {
 public:
