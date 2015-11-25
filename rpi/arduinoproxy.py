@@ -7,8 +7,16 @@ Classes:
     ArduinoRobot: The manager of the Arduino robot.
 """
 
+from __future__ import print_function
 import argparse
 import sys
+import itertools
+import time
+import yaml
+import json
+import paho.mqtt.client
+
+import arduinocomms
 
 parser = argparse.ArgumentParser(
     description='Run the RPI-arduino proxy control program.'
@@ -19,15 +27,6 @@ parser.add_argument(
     )
 args = parser.parse_args()
 
-
-from __future__ import print_function
-import itertools
-import time
-import json
-import jsmin
-import paho.mqtt.client
-
-import arduinocomms
 
 class MqRobot( paho.mqtt.client.Client ):
     """
@@ -70,7 +69,7 @@ class MqRobot( paho.mqtt.client.Client ):
         self.loop_stop()
         self.disconnect()
 
-    def update( self, state ):
+    def send( self, state ):
         self.publish( "/mollie-robot/state", state, qos=0, retain=True )
 
 
@@ -164,7 +163,7 @@ class ArduinoProxy():
     def process_arduino_response( self, s ):
         if (s[0] == "{"):
             self.robotstate.update( s )
-            self.mqrobot.update( s )
+            self.mqrobot.send( s )
         else:
             print( "Arduino: ", s, end="" )
 
@@ -217,18 +216,17 @@ if __name__ == "__main__":
     robbie.initialise()
 
     # Load and send configuration to the robot.
-    with open( 'config.json', 'r' ) as f:
-        d = json.loads( jsmin.jsmin( f.read() ) )
+    with open( 'config.yaml', 'r' ) as f:
+        d = yaml.load( f )
 
     # Break up the config dictionary into parts
     for key, value in d["config"].iteritems():
         for key2, value2 in value.iteritems():
             s = json.dumps( {"config": {key: {key2: value2}}},
                             separators=(',',':') )
-            if args.verbose:
-                print( "Config: ", s )
+            # print( "Config: ", s )
             robbie.send( s )
-            # time.sleep( 1 )
+            time.sleep( 0.1 )
 
     try:
         robbie.loop()
