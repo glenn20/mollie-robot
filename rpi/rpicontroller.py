@@ -8,12 +8,22 @@ Classes:
 """
 
 from __future__ import print_function
+import argparse
 import itertools
 import time
 import json
 import sys, tty, termios
 
 import paho.mqtt.client as mqtt
+
+parser = argparse.ArgumentParser(
+    description='Run the RPI-arduino proxy control program.'
+    )
+parser.add_argument(
+    "--verbose", action="store_true",
+    help="Print diagnostic output"
+    )
+args = parser.parse_args()
 
 class MqRobot( mqtt.Client ):
     """
@@ -37,9 +47,9 @@ class MqRobot( mqtt.Client ):
                end="\r\n" )
 
     def _on_message( self, mqttc, obj, msg ):
-        print( "MQTT: " + msg.topic + " " +
-               str( msg.qos ) + " " + str( msg.payload ),
-               end="\r\n" )
+        #print( "MQTT: " + msg.topic + " " +
+        #       str( msg.qos ) + " " + str( msg.payload ),
+        #       end="\r\n" )
         # Update the robot state
         self.robot.robotstate.state( json.loads( msg.payload ) )
         print( *self.robot.robotstate.listofvalues(), sep=',',
@@ -68,7 +78,6 @@ class RobotState:
         self.speed      = [0,0]
         self.counts     = [0,0]
         self.power      = [0,0]
-        self.pid        = [0.7, 0.0, 0.0 ]
 
     def update( self, s ):
         print( "Line =", s, end="\r\n" )
@@ -86,7 +95,6 @@ class RobotState:
                 self.speed,
                 self.counts,
                 self.power,
-                self.pid
             )
         )
     
@@ -175,8 +183,8 @@ class RobotController():
         Shutdown/close the robot.
         """
         print( "Closing down the robot..." )
-        self.datafile.close()
         self.mqrobot.close()
+        self.datafile.close()
 
     # Tell the robot to move at "speed" in "direction"
     def Run( self, speed, direction=0 ):
@@ -207,8 +215,7 @@ class RobotController():
             left  = right - difference
 
         return self.send(
-            self.targetstate.state( {"setspeed": [int(round(left)),
-                                                  int(round(right))]} )
+            self.targetstate.state( {"setspeed": [left, right]} )
         )
 
     # Tell the robot to move at "speed" in "direction"
@@ -221,9 +228,7 @@ class RobotController():
         """
         self.power     = self._constrain( power, -255, 255 )
         return self.send(
-            self.targetstate.state( {"power":
-                                     [int(round(self.power)),
-                                      int(round(self.power))]} )
+            self.targetstate.state( {"power": [self.power, self.power]} )
         )
 
     # Tell the robot to point camera at "angle"
@@ -243,18 +248,6 @@ class RobotController():
         return self.send(
             self.targetstate.state(
                 {"head": [ self.angleX, self.angleY]}
-            )
-        )
-
-    def PID( self, deltaKp, deltaKi, deltaKd ):
-        """
-        Adjust the PID parameters for the PID control on the motor wheels.
-        """
-        return self.send(
-            self.targetstate.state(
-                {"pid": [self.targetstate.pid[0] + deltaKp,
-                         self.targetstate.pid[1] + deltaKi,
-                         self.targetstate.pid[2] + deltaKd ]}
             )
         )
 
@@ -308,31 +301,16 @@ class RobotController():
             return self.Power( self.power - 10 )
         elif c == "." or c == "\e[C":
             # Right key - Turn robot to the right
-            return self.Run( self.speed, self.direction + 0.05 )
+            return self.Run( self.speed, self.direction + 0.02 )
         elif c == "," or c == "\e[D":
             # Left key - Turn robot to the left
-            return self.Run( self.speed, self.direction - 0.05 )
+            return self.Run( self.speed, self.direction - 0.02 )
+        elif c == "/":
+            # Left key - Turn robot to the left
+            return self.Run( self.speed, 0.0 )
         elif c == "/":
             # Go straigh ahead
             return self.Run( self.speed, 0.0 )
-        elif c == "u":
-            # Increment Kp
-            return self.PID(  0.1,  0.0,  0.0 )
-        elif c == "j":
-            # Decrement Kp
-            return self.PID( -0.1,  0.0,  0.0 )
-        elif c == "i":
-            # Increment Ki
-            return self.PID(  0.0,  0.1,  0.0 )
-        elif c == "k":
-            # Decrement Ki
-            return self.PID(  0.0, -0.1,  0.0 )
-        elif c == "o":
-            # Increment Kd
-            return self.PID(  0.0,  0.0,  0.1 )
-        elif c == "l":
-            # Decrement Kd
-            return self.PID(  0.0,  0.0, -0.1 )
         return True
 
     def loop( self ):
