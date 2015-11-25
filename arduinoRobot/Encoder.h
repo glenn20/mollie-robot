@@ -21,9 +21,8 @@ public:
 private:
     int                    m_controlpin;
     void                   (*m_interruptfunction)();
-    volatile float         m_speed;
     volatile unsigned long m_count;          // Total number of pulses recorded
-    volatile unsigned long m_lastcount;      // Time between last npulses
+    volatile unsigned long m_deltat;         // Time between last npulses
     volatile unsigned long m_lasttime;       // The time of the last pulse
 };
 

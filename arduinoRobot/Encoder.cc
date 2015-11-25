@@ -5,14 +5,12 @@
 #include "Encoder.h"
 
 static const unsigned int NPULSES = 8;
-static const unsigned int NMICROS = 50000;
 
 Encoder::Encoder( void (*interruptfunction)() )
     : m_controlpin        ( 0 ),
       m_interruptfunction ( interruptfunction ),
-      m_speed             ( 0.0 ),
       m_count             ( 0 ),
-      m_lastcount	  ( 0 ),
+      m_deltat		  ( 0 ),
       m_lasttime          ( 0 )
 {
 }
@@ -25,8 +23,7 @@ void Encoder::initialise( int controlpin )
     }
 
     m_controlpin = controlpin;
-    m_speed = 0.0;
-    m_count = m_lastcount = m_lasttime = 0;
+    m_count = m_deltat = m_lasttime = 0;
 
     if (m_controlpin >= 0) {
 	pinMode( m_controlpin, INPUT_PULLUP );
@@ -54,23 +51,35 @@ bool Encoder::valid()
     return (m_controlpin >= 0);
 }
 
-// The encoder generates 4 pulses per revolution of the wheel. The spacing
+// The encoder generates 8 pulses per revolution of the wheel. The spacing
 // between pulses is not perfectly uniform, so calculating the speed from the
 // time between the last two pulses is inaccurate and noisy.
+
+// We save the times (in microseconds) of the last 9 pulses to calculate an
+// average speed for the last full wheel revolution. This leads to a much
+// stabler speed measurement, but may lag behind the instantaneous speed when
+// the speed is changing rapidly at low speed.
+
+// npulses and ntime is used to calculate the speed in Encoder::speed().
+
+// npulses is normally 9, but may be less if we have not yet recorded a full 9
+// pulses
+
+// ntime is the time (in microseconds) between the 9th and last most recent
+// pulses
 
 // Function to call from the arduino interrupt to register a pulse
 void Encoder::update()
 {
-    unsigned long t = micros();
-    ++m_count;
-    if (m_lasttime == 0) {
-	m_lastcount = m_count;
-	m_lasttime  = t;
-    } else if (t - m_lasttime > NMICROS) {
-	m_speed     = ((m_count - m_lastcount) / ((t - m_lasttime) / 1.0e6));
-	m_lastcount = m_count;
-	m_lasttime  = t;
+    if (++m_count % NPULSES != 0) {
+	// Just keep counting pulses till we have enough to measure speed
+	return;
     }
+    unsigned long t = micros();
+    if (m_lasttime != 0) {
+	m_deltat = t - m_lasttime;
+    }
+    m_lasttime = t;
 }
 
 // Return the speed in pulses per second
@@ -82,24 +91,25 @@ float Encoder::speed()
 	// Wheel is at rest - or no encoder present
 	return 0.0;
     }
-    if (t > lasttime && (t - lasttime) > 200000) {
+    //if (t > lasttime && (t - lasttime) > 500000) {
 	// If more than 0.5 seconds since last pulse, set the Wheel to be at rest
-	m_lasttime = 0;
-	Serial.print( "Wheel is stopping: " );
-	Serial.print( t );
-	Serial.print( " " );
-	Serial.println( lasttime );
-	return 0.0;
-    }
+	//m_lasttime = 0;
+	//Serial.print( "Wheel is stopping: " );
+	//Serial.print( t );
+	//Serial.print( " " );
+	//Serial.println( lasttime );
+	//return 0.0;
+    //}
 
-    return m_speed / 24.0;
+    unsigned long deltat = m_deltat;
+    return (deltat > 0 ? (NPULSES / (deltat / 1000000.0)) / 24.0 : 0.0);
 }
 
 bool Encoder::moving()
 {
     unsigned long lasttime = m_lasttime;
     unsigned long t = micros();
-    return (lasttime != 0) && t < lasttime && (t - lasttime) < 200000;
+    return (lasttime != 0) && t > lasttime && (t - lasttime) < 200000;
 }
 
 unsigned long Encoder::count()
